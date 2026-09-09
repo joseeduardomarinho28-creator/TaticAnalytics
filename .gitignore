@@ -23,6 +23,9 @@
 hs_err_pid*
 replay_pid*
 
+# Target paste
+java_core/target/
+
 # ==========================================
 # Python Specifics (for python_vision module)
 # ==========================================
