@@ -13,6 +13,5 @@ public class Main {
 
         System.out.println("Frames : " + frames.size());
 
-        loader.loadData("src/main/resources/tracking_sample.json");
     }
 }
