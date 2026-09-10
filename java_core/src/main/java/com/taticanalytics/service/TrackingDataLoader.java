@@ -1,12 +1,15 @@
 package com.taticanalytics.service;
 
+import java.util.List;
+import java.util.ArrayList;
 import java.io.IOException;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.File;
-
 import com.fasterxml.jackson.databind.JsonNode;
+import com.taticanalytics.model.FrameData;
+import com.taticanalytics.model.Player;
+import com.taticanalytics.model.Ball;
+import com.taticanalytics.model.Referee;
 
 public class TrackingDataLoader {
 
@@ -16,7 +19,8 @@ public class TrackingDataLoader {
         this.mapper = new ObjectMapper();
     }
 
-    public void loadData(String filePath) {
+    public List<FrameData> loadData(String filePath) {
+        List<FrameData> frames = new ArrayList<>();
         try {
             // creates an object in memory that points to the file located at the path passed in filePath
             File file = new File(filePath);
@@ -31,6 +35,8 @@ public class TrackingDataLoader {
                     int frameId = frameNode.get("frame_id").asInt();
                     double timestamp = frameNode.get("timestamp").asDouble();
 
+                    FrameData currentFrame = new FrameData(frameId, timestamp);
+
                     System.out.println("Processing Frame ID " + frameId + " | Time: " + timestamp + "s");
 
                     JsonNode entitiesNode = frameNode.get("entities");
@@ -41,16 +47,20 @@ public class TrackingDataLoader {
                             int id = entityNode.get("id").asInt();
                             double x = entityNode.get("x").asDouble();
                             double y = entityNode.get("y").asDouble();
-
+                        
                             switch (type) {
                                 case "player":
-                                    System.out.println(" -> Player ID " + id + " in X: " + x + " / Y: " + y);
+                                    int teamId = entityNode.get("team_id").asInt();
+                                    Player player = new Player(id, x, y, teamId);
+                                    currentFrame.addEntity(player);
                                     break;
                                 case "ball":
-                                    System.out.println(" -> Ball ID " + id + " in X: " + x + " / Y: " + y);
+                                    Ball ball = new Ball(id, x, y);
+                                    currentFrame.addEntity(ball);
                                     break;
                                 case "referee":
-                                    System.out.println(" -> Referee ID " + id + " in X: " + x + " / Y: " + y);
+                                    Referee referee = new Referee(id, x, y);
+                                    currentFrame.addEntity(referee);
                                     break;
                                 default:
                                     System.out.println(" -> Unknow: " + type);
@@ -59,11 +69,13 @@ public class TrackingDataLoader {
                             }
                         }
                     }
+                    frames.add(currentFrame);
                 }
             }
 
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return frames;
     }
 }
