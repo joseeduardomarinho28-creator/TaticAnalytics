@@ -9,6 +9,7 @@ public class AnalyticsService {
         double totalDistance = 0.0;
 
         Entity previousEntity = null;
+        int previousFrameId = -1;
 
         for (FrameData frame : frames) {
 
@@ -16,13 +17,14 @@ public class AnalyticsService {
 
                 if (entityId == entity.getId()) {
 
-                    if (previousEntity != null) {
+                    if ((previousEntity != null) && (frame.getFrameId() - previousFrameId) == 1) {
                         double dx = entity.getX() - previousEntity.getX();
                         double dy = entity.getY() - previousEntity.getY();
                         double stepDistance = Math.sqrt(dx * dx + dy * dy);
                         totalDistance += stepDistance;
                     }
                     previousEntity = entity;
+                    previousFrameId = frame.getFrameId();
                 }
             }
         }

@@ -51,6 +51,26 @@ public class AnalyticsServiceTest {
         assertEquals(0.0, totalDistance, 0.001);
 
     }
+
+    @Test
+    public void shouldIgnoreDistanceCalculationWhenFrameGapIsGreaterThanOne() {
+        List<FrameData> frames = new ArrayList<>();
+
+        FrameData frame1 = new FrameData(1, 0.0);
+        frame1.addEntity(new Player(1, 0.0, 0.0, 10));
+        frames.add(frame1);
+
+        FrameData frame3 = new FrameData(3, 0.1);
+        frame1.addEntity(new Player(1, 3.0, 4.0, 10));
+        frames.add(frame3);
+
+        AnalyticsService service = new AnalyticsService();
+
+        double totalDistance = service.calculateTotalDistance(frames, 1);
+
+        assertEquals(0.0, totalDistance, 0.001);
+
+    }
 }
 
 
