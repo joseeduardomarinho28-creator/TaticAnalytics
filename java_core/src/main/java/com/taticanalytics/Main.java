@@ -2,6 +2,7 @@ package com.taticanalytics;
 
 import com.taticanalytics.service.TrackingDataLoader;
 import java.util.List;
+import java.util.Map;
 import com.taticanalytics.model.FrameData;
 import com.taticanalytics.model.Entity;
 import com.taticanalytics.model.Player;
@@ -9,7 +10,6 @@ import com.taticanalytics.model.PlayerStats;
 import com.taticanalytics.model.Referee;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.service.AnalyticsService;
-import com.taticanalytics.model.PlayerStats;
 
 public class Main {
     public static void main(String[] args) {
@@ -23,7 +23,7 @@ public class Main {
         System.out.println("--------------------------------------------------");
 
         for (FrameData frame : frames) {
-            System.out.println("Frame ID: " + frame.getFrameId() + " | Time: " + frame.getTimestamp() + "s");
+            System.out.println("Frame ID: " + frame.getFrameId() + " | Team: " + frame.getTimestamp() + "s");
 
             for (Entity entity : frame.getEntities()) {
 
@@ -45,5 +45,19 @@ public class Main {
         PlayerStats statsPlayer1 = analyticsService.calculatePlayerStats(frames, 1);
         System.out.printf("Total distance of Player 1: %.2f meters%n", statsPlayer1.getTotalDistance());
         System.out.printf("Max speed of Player 1: %.2f m/s (%.2f km/h)%n", statsPlayer1.getMaxSpeed(), statsPlayer1.getMaxSpeedKmh());
+
+        System.out.println("--------------------------------------------------");
+        double radiusMeters = 1.5;
+        Map<Integer, Double> possessionMap = analyticsService.calculatePossessionTimePerPlayer(frames, radiusMeters);
+
+        System.out.println("Player's Ball Possession Time (Radius: " + radiusMeters + "m):");
+
+        if(possessionMap.isEmpty()) {
+            System.out.println("No player kept possession within the specified radius.");
+        } else {
+        possessionMap.forEach((playerId, time) -> {
+            System.out.printf("Player ID %d: %.2f seconds%n", playerId, time);
+        });
+        }
     }
 }

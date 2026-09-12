@@ -11,6 +11,7 @@ import com.taticanalytics.model.Ball;
 import com.taticanalytics.model.FrameData;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class AnalyticsServiceTest {
     @Test
@@ -99,6 +100,31 @@ public class AnalyticsServiceTest {
 
         assertEquals(36.0, stats.getMaxSpeedKmh(), 0.001);
 
+    }
+
+    @Test
+    public void shouldCalculatePossessionTimePerPlayer() {
+        List<FrameData> frames = new ArrayList<>();
+
+        FrameData frame1 = new FrameData(1, 0.0);
+        frame1.addEntity(new Ball(1, 10.0, 10.0));
+        frame1.addEntity(new Player(1, 10.5, 10.0, 10));
+        frame1.addEntity(new Player(2, 14.0, 10.0, 10));
+        frames.add(frame1);
+
+        FrameData frame2 = new FrameData(2, 1.0);
+        frame2.addEntity(new Ball(1, 10.0, 10.0));
+        frame2.addEntity(new Player(1, 13.0, 10.0, 10));
+        frame2.addEntity(new Player(2, 10.5, 10.0, 10));
+        frames.add(frame2);
+
+        AnalyticsService service = new AnalyticsService();
+
+        Map<Integer, Double> possessionMap = service.calculatePossessionTimePerPlayer(frames, 1.5);
+
+        assertEquals(1.0, possessionMap.get(2), 0.001);
+
+        assertEquals(null, possessionMap.get(1));
     }
 }
 
