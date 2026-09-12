@@ -3,13 +3,17 @@ package com.taticanalytics.service;
 import java.util.List;
 import com.taticanalytics.model.FrameData;
 import com.taticanalytics.model.Entity;
+import com.taticanalytics.model.PlayerStats;
 
 public class AnalyticsService {
-    public double calculateTotalDistance(List<FrameData> frames, int entityId) {
+    public PlayerStats calculatePlayerStats(List<FrameData> frames, int entityId) {
         double totalDistance = 0.0;
-
         Entity previousEntity = null;
         int previousFrameId = -1;
+        double previousTimestamp = 0.0;
+        double maxSpeed = 0.0;
+        double deltaTime = 0.0;
+        double currentSpeed = 0.0;
 
         for (FrameData frame : frames) {
 
@@ -22,13 +26,24 @@ public class AnalyticsService {
                         double dy = entity.getY() - previousEntity.getY();
                         double stepDistance = Math.sqrt(dx * dx + dy * dy);
                         totalDistance += stepDistance;
+                        deltaTime = frame.getTimestamp() - previousTimestamp;
+
+                        if (deltaTime > 0.0) {
+                            currentSpeed = stepDistance / deltaTime;
+
+                            if (currentSpeed > maxSpeed) {
+                                maxSpeed = currentSpeed;
+                            }
+                        }
                     }
                     previousEntity = entity;
                     previousFrameId = frame.getFrameId();
+                    previousTimestamp = frame.getTimestamp();
+
                 }
             }
         }
 
-        return totalDistance;
+        return new PlayerStats(totalDistance, maxSpeed);
     }
 }

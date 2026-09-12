@@ -5,9 +5,11 @@ import java.util.List;
 import com.taticanalytics.model.FrameData;
 import com.taticanalytics.model.Entity;
 import com.taticanalytics.model.Player;
+import com.taticanalytics.model.PlayerStats;
 import com.taticanalytics.model.Referee;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.service.AnalyticsService;
+import com.taticanalytics.model.PlayerStats;
 
 public class Main {
     public static void main(String[] args) {
@@ -40,8 +42,8 @@ public class Main {
         }
 
         System.out.println("--------------------------------------------------");
-        double distancePlayer1 = analyticsService.calculateTotalDistance(frames, 1);
-        System.out.printf("total distance of the player 1: %.2f meters%n", distancePlayer1);
-
+        PlayerStats statsPlayer1 = analyticsService.calculatePlayerStats(frames, 1);
+        System.out.printf("Total distance of Player 1: %.2f meters%n", statsPlayer1.getTotalDistance());
+        System.out.printf("Max speed of Player 1: %.2f m/s (%.2f km/h)%n", statsPlayer1.getMaxSpeed(), statsPlayer1.getMaxSpeedKmh());
     }
 }
