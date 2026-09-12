@@ -59,5 +59,24 @@ public class Main {
             System.out.printf("Player ID %d: %.2f seconds%n", playerId, time);
         });
         }
+
+        System.out.println("--------------------------------------------------");
+        Map<Integer, Double> teamPossessionMap = analyticsService.calculatePossessionTimePerTeam(frames, radiusMeters);
+        double totalTeamTime = 0.0;
+
+        for (double time : teamPossessionMap.values()) {
+            totalTeamTime += time;
+            System.out.println("Team's Ball Possession Time (Radius: " + radiusMeters + "m):");
+        }
+
+        if (teamPossessionMap.isEmpty()) {
+            System.out.println("No team kept possession within the specified radius.");
+        } else {
+            final double finalTotal = totalTeamTime;
+            teamPossessionMap.forEach((teamId, time) -> {
+                double percentage = (time / finalTotal) * 100.0;
+                System.out.printf("Team ID %d: %.2f seconds (%.1f%%)%n", teamId, time, percentage);
+    });
+}
     }
 }
