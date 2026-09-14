@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.taticanalytics.model.FrameData;
+import com.taticanalytics.model.HeatmapGrid;
 import com.taticanalytics.model.Entity;
 import com.taticanalytics.model.PlayerStats;
 import com.taticanalytics.model.Ball;
@@ -123,6 +124,35 @@ public class AnalyticsService {
             previousTimestamp = frame.getTimestamp();
         }
         return teamPossessionMap;
+    }
+
+    public HeatmapGrid generatePlayerHeatmap(List<FrameData> frames, int entityId, int rows, int cols, double fieldWidth, double fieldHeight) {
+        HeatmapGrid heatmap = new HeatmapGrid(rows, cols, fieldWidth, fieldHeight);
+
+        Entity previousEntity = null;
+        int previousFrameId = -1;
+        double previousTimestamp = 0.0;
+
+        for (FrameData frame : frames) {
+
+            for (Entity entity : frame.getEntities()) {
+
+                if (entityId == entity.getId()) {
+
+                     if ((previousEntity != null) && (frame.getFrameId() - previousFrameId == 1)) {
+                        double deltaTime = frame.getTimestamp() - previousTimestamp;
+
+                        if (deltaTime > 0.0) {
+                            heatmap.addTime(previousEntity.getX(), previousEntity.getY(), deltaTime);
+                        }
+                     }
+                    previousEntity = entity;
+                    previousFrameId = frame.getFrameId();
+                    previousTimestamp = frame.getTimestamp();
+                }
+            }
+        }
+        return heatmap;
     }
 
     private Ball findBall (FrameData frame) {
