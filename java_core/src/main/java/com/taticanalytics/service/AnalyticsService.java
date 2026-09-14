@@ -61,15 +61,7 @@ public class AnalyticsService {
         int previousFrameId = -1;
             
         for (FrameData frame : frames) {
-                            Ball ball = null;
-
-            for (Entity entity : frame.getEntities()) {
-
-                if (entity instanceof Ball b) {
-                    ball = b;
-                    break;
-                }
-            }
+            Ball ball = findBall(frame);
 
             if (ball != null) {
                 if ((previousFrameId != -1) && (frame.getFrameId() - previousFrameId) == 1) {
@@ -79,34 +71,20 @@ public class AnalyticsService {
                         possessionMap.merge(currentPossessorId, deltaTime, Double::sum);
                     }
                 }
+                ClosestPlayerResult closestResult = findClosestPlayer(frame, ball);
                 
-                Player closestPlayer = null;
-                double minDistance = Double.MAX_VALUE;
-
-                for (Entity entity : frame.getEntities()) {
-
-                    if (entity instanceof Player player) {
-                        double dx = player.getX() - ball.getX();
-                        double dy = player.getY() - ball.getY();
-                        double distance = Math.sqrt(dx * dx + dy * dy);
-
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            closestPlayer = player;
-                        }
-                    }
-                }
-                if (closestPlayer != null && minDistance <= radiusMeters) {
-                    currentPossessorId = closestPlayer.getId();
+                if (closestResult.player() != null && closestResult.distance() <= radiusMeters) {
+                    currentPossessorId = closestResult.player().getId();
                 } else {
                     currentPossessorId = null;
                 }
+
             } else {
                 currentPossessorId = null;
             }
 
-        previousFrameId = frame.getFrameId();
-        previousTimestamp = frame.getTimestamp();
+            previousFrameId = frame.getFrameId();
+            previousTimestamp = frame.getTimestamp();
         }
         return possessionMap;
     }
@@ -119,15 +97,7 @@ public class AnalyticsService {
         int previousFrameId = -1;
             
         for (FrameData frame : frames) {
-                            Ball ball = null;
-
-            for (Entity entity : frame.getEntities()) {
-
-                if (entity instanceof Ball b) {
-                    ball = b;
-                    break;
-                }
-            }
+            Ball ball = findBall(frame);
 
             if (ball != null) {
                 if ((previousFrameId != -1) && (frame.getFrameId() - previousFrameId) == 1) {
@@ -137,33 +107,53 @@ public class AnalyticsService {
                         teamPossessionMap.merge(currentPossessorTeam, deltaTime, Double::sum);
                     }
                 }
-                Player closestPlayer = null;
-                double minDistance = Double.MAX_VALUE;
 
-                for (Entity entity : frame.getEntities()) {
+                ClosestPlayerResult closestResult = findClosestPlayer(frame, ball);
 
-                    if (entity instanceof Player player) {
-                        double dx = player.getX() - ball.getX();
-                        double dy = player.getY() - ball.getY();
-                        double distance = Math.sqrt(dx * dx + dy * dy);
-
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            closestPlayer = player;
-                        }
-                    }
-                }
-                if (closestPlayer != null && minDistance <= radiusMeters) {
-                    currentPossessorTeam = closestPlayer.getTeamId();
+                if (closestResult.player() != null && closestResult.distance() <= radiusMeters) {
+                    currentPossessorTeam = closestResult.player().getTeamId();
                 } else {
                     currentPossessorTeam = null;
                 }
             } else {
                 currentPossessorTeam = null;
             }
-        previousFrameId = frame.getFrameId();
-        previousTimestamp = frame.getTimestamp();
+
+            previousFrameId = frame.getFrameId();
+            previousTimestamp = frame.getTimestamp();
         }
         return teamPossessionMap;
     }
+
+    private Ball findBall (FrameData frame) {
+         for (Entity entity : frame.getEntities()) {
+
+            if (entity instanceof Ball b) {
+                return b;
+            }
+        }
+        return null;
+    }
+    
+    private ClosestPlayerResult findClosestPlayer(FrameData frame, Ball ball) {
+        Player closestPlayer = null;
+        double minDistance = Double.MAX_VALUE;
+
+        for (Entity entity : frame.getEntities()) {
+
+            if (entity instanceof Player player) {
+                double dx = player.getX() - ball.getX();
+                double dy = player.getY() - ball.getY();
+                double distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestPlayer = player;
+                }
+            }
+        }
+        return new ClosestPlayerResult(closestPlayer, minDistance);
+    }
+
+    private record ClosestPlayerResult(Player player, double distance) {}
 }
