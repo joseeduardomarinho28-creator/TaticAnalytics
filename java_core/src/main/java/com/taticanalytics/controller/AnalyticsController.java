@@ -47,4 +47,11 @@ public class AnalyticsController {
         List<FrameData> frames = dataLoader.loadSampleData();
         return analyticsService.generatePlayerHeatmap(frames, id, rows, cols, fieldWidth, fieldHeight);
     }
+
+    // 4. Possession Per Team
+    @GetMapping("/possession/teams")
+    public Map<Integer, Double> getPossessionPerTeam(@RequestParam(name = "radius", defaultValue = "1.5") double radius) {
+        List<FrameData> frames = dataLoader.loadSampleData();
+        return analyticsService.calculatePossessionTimePerTeam(frames, radius);
+    }
 }
