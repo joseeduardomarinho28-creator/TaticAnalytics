@@ -16,6 +16,9 @@ import com.taticanalytics.model.Referee;
 import com.taticanalytics.io.dto.EntityDTO;
 import com.taticanalytics.io.dto.FrameDataDTO;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class JsonFrameParser {
     private final ObjectMapper objectMapper;
 

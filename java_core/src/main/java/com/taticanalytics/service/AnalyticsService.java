@@ -11,6 +11,9 @@ import com.taticanalytics.model.PlayerStats;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.model.Player;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class AnalyticsService {
     public PlayerStats calculatePlayerStats(List<FrameData> frames, int entityId) {
         double totalDistance = 0.0;

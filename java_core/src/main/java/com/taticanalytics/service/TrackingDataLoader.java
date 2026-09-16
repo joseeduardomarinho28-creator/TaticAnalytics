@@ -11,6 +11,9 @@ import com.taticanalytics.model.Player;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.model.Referee;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class TrackingDataLoader {
 
     private final ObjectMapper mapper;
@@ -77,5 +80,9 @@ public class TrackingDataLoader {
             e.printStackTrace();
         }
         return frames;
+    }
+
+    public List<FrameData> loadSampleData() {
+    return loadData("src/main/resources/tracking_sample.json");
     }
 }
