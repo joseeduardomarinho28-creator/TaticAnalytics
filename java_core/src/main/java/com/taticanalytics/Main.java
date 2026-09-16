@@ -4,12 +4,14 @@ import com.taticanalytics.service.TrackingDataLoader;
 import java.util.List;
 import java.util.Map;
 import com.taticanalytics.model.FrameData;
+import com.taticanalytics.model.HeatmapGrid;
 import com.taticanalytics.model.Entity;
 import com.taticanalytics.model.Player;
 import com.taticanalytics.model.PlayerStats;
 import com.taticanalytics.model.Referee;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.service.AnalyticsService;
+
 
 public class Main {
     public static void main(String[] args) {
@@ -76,7 +78,21 @@ public class Main {
             teamPossessionMap.forEach((teamId, time) -> {
                 double percentage = (time / finalTotal) * 100.0;
                 System.out.printf("Team ID %d: %.2f seconds (%.1f%%)%n", teamId, time, percentage);
-    });
-}
+
+
+            });
+        }
+        System.out.println("--------------------------------------------------");
+        HeatmapGrid heatmap = analyticsService.generatePlayerHeatmap(frames, 1, 10, 10, 105.0, 68.0);
+        double[][] grid = heatmap.getGrid();
+
+        for (double[] line : grid) {
+
+            for (double value : line) {
+                System.out.printf("%.1fs ", value);
+            }
+        System.out.println();
+        }
+
     }
 }
