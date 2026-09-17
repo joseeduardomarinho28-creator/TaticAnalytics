@@ -1,11 +1,22 @@
 package com.taticanalytics.model;
 
+import com.taticanalytics.util.MatchConstants;
+
 public class HeatmapGrid {
     private int rows;
     private int cols;
     private double fieldWidth;
     private double fieldHeight;
     private double[][] grid;
+
+    public HeatmapGrid() {
+        this(
+            MatchConstants.DEFAULT_GRID_ROWS,
+            MatchConstants.DEFAULT_GRID_COLS,
+            MatchConstants.FIELD_LENGTH,
+            MatchConstants.FIELD_WIDTH
+        );
+    }
 
     public HeatmapGrid(int rows, int cols, double fieldWidth, double fieldHeight) {
         this.grid = new double[rows][cols];

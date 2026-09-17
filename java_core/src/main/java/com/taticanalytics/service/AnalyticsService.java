@@ -11,6 +11,8 @@ import com.taticanalytics.model.PlayerStats;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.model.Player;
 
+import com.taticanalytics.util.MatchConstants;
+
 import org.springframework.stereotype.Service;
 
 @Service
@@ -93,6 +95,10 @@ public class AnalyticsService {
         return possessionMap;
     }
 
+    public Map<Integer, Double> calculatePossessionTimePerPlayer(List<FrameData> frames) {
+        return calculatePossessionTimePerPlayer(frames, MatchConstants.BALL_CONTROL_RADIUS);
+    }
+
     public Map<Integer, Double> calculatePossessionTimePerTeam(List<FrameData> frames, double radiusMeters) {
         Map<Integer, Double> teamPossessionMap = new HashMap<>();
 
@@ -129,6 +135,10 @@ public class AnalyticsService {
         return teamPossessionMap;
     }
 
+    public Map<Integer, Double> calculatePossessionTimePerTeam(List<FrameData> frames) {
+        return calculatePossessionTimePerTeam(frames, MatchConstants.BALL_CONTROL_RADIUS);
+    }
+
     public HeatmapGrid generatePlayerHeatmap(List<FrameData> frames, int entityId, int rows, int cols, double fieldWidth, double fieldHeight) {
         HeatmapGrid heatmap = new HeatmapGrid(rows, cols, fieldWidth, fieldHeight);
 
@@ -156,6 +166,17 @@ public class AnalyticsService {
             }
         }
         return heatmap;
+    }
+
+    public HeatmapGrid generatePlayerHeatmap(List<FrameData> frames, int entityId) {
+        return generatePlayerHeatmap(
+            frames, 
+            entityId, 
+            MatchConstants.DEFAULT_GRID_ROWS, 
+            MatchConstants.DEFAULT_GRID_COLS, 
+            MatchConstants.FIELD_LENGTH, 
+            MatchConstants.FIELD_WIDTH
+        );
     }
 
     private Ball findBall (FrameData frame) {

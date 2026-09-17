@@ -10,6 +10,8 @@ import com.taticanalytics.model.FrameData;
 import com.taticanalytics.model.HeatmapGrid;
 import com.taticanalytics.model.Player;
 
+import com.taticanalytics.util.MatchConstants;
+
 public class AnalyticsServiceHeatmapTest {
     @Test
     public void shouldAccumulateTimeInCorrectHeatmapCell() {
@@ -79,5 +81,26 @@ public class AnalyticsServiceHeatmapTest {
 
         assertEquals(0.0, grid[1][1], 0.001);
 
+    }
+
+    @Test
+    public void shouldGenerateHeatmapUsingDefaultFieldDimensions() {
+        List<FrameData> frames = new ArrayList<>();
+
+        FrameData frame1 = new FrameData(1, 0.0);
+        frame1.addEntity(new Player(1, 10.0, 10.0, 10));
+        frames.add(frame1);
+
+        FrameData frame2 = new FrameData(2, 1.0);
+        frame2.addEntity(new Player(1, 10.0, 10.0, 10));
+        frames.add(frame2);
+
+        AnalyticsService service = new AnalyticsService();
+
+        // Testa a sobrecarga simplificada que utiliza MatchConstants
+        HeatmapGrid heatmap = service.generatePlayerHeatmap(frames, 1);
+
+        assertEquals(MatchConstants.DEFAULT_GRID_ROWS, heatmap.getRows());
+        assertEquals(MatchConstants.DEFAULT_GRID_COLS, heatmap.getCols());
     }
 }

@@ -12,7 +12,6 @@ import com.taticanalytics.model.Referee;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.service.AnalyticsService;
 
-
 public class Main {
     public static void main(String[] args) {
         TrackingDataLoader loader = new TrackingDataLoader();
@@ -20,26 +19,20 @@ public class Main {
 
         List<FrameData> frames = loader.loadData("src/main/resources/tracking_sample.json");
 
-        System.out.println("Frames : " + frames.size());
-
+        System.out.println("Loaded Frames: " + frames.size());
         System.out.println("--------------------------------------------------");
 
         for (FrameData frame : frames) {
-            System.out.println("Frame ID: " + frame.getFrameId() + " | Team: " + frame.getTimestamp() + "s");
+            System.out.println("Frame ID: " + frame.getFrameId() + " | Timestamp: " + frame.getTimestamp() + "s");
 
             for (Entity entity : frame.getEntities()) {
-
-                 if (entity instanceof Player player) {
-                System.out.println("[PLAYER] ID: " + player.getId() + " | Team: " + player.getTeamId() + " | Position: (" + player.getX() + ", " + player.getY() + ")");
-            }
-
-            else if (entity instanceof Ball ball) {
-                System.out.println("[BALL] ID: " + ball.getId() + " | Position: (" + ball.getX() + ", " + ball.getY() + ")");
-            }
-
-            else if (entity instanceof Referee referee) {
-                System.out.println("[REFEREE] ID: " + referee.getId() + " | Position: (" + referee.getX() + ", " + referee.getY() + ")");
-            }
+                if (entity instanceof Player player) {
+                    System.out.println("  [PLAYER] ID: " + player.getId() + " | Team: " + player.getTeamId() + " | Position: (" + player.getX() + ", " + player.getY() + ")");
+                } else if (entity instanceof Ball ball) {
+                    System.out.println("  [BALL] ID: " + ball.getId() + " | Position: (" + ball.getX() + ", " + ball.getY() + ")");
+                } else if (entity instanceof Referee referee) {
+                    System.out.println("  [REFEREE] ID: " + referee.getId() + " | Position: (" + referee.getX() + ", " + referee.getY() + ")");
+                }
             }
         }
 
@@ -49,50 +42,45 @@ public class Main {
         System.out.printf("Max speed of Player 1: %.2f m/s (%.2f km/h)%n", statsPlayer1.getMaxSpeed(), statsPlayer1.getMaxSpeedKmh());
 
         System.out.println("--------------------------------------------------");
-        double radiusMeters = 1.5;
-        Map<Integer, Double> possessionMap = analyticsService.calculatePossessionTimePerPlayer(frames, radiusMeters);
+        // Using the default overload (MatchConstants.BALL_CONTROL_RADIUS = 2.0m)
+        Map<Integer, Double> possessionMap = analyticsService.calculatePossessionTimePerPlayer(frames);
 
-        System.out.println("Player's Ball Possession Time (Radius: " + radiusMeters + "m):");
-
-        if(possessionMap.isEmpty()) {
+        System.out.println("Ball Possession Time per Player (Default Radius):");
+        if (possessionMap.isEmpty()) {
             System.out.println("No player kept possession within the specified radius.");
         } else {
-        possessionMap.forEach((playerId, time) -> {
-            System.out.printf("Player ID %d: %.2f seconds%n", playerId, time);
-        });
+            possessionMap.forEach((playerId, time) -> 
+                System.out.printf("  Player ID %d: %.2f seconds%n", playerId, time)
+            );
         }
 
         System.out.println("--------------------------------------------------");
-        Map<Integer, Double> teamPossessionMap = analyticsService.calculatePossessionTimePerTeam(frames, radiusMeters);
-        double totalTeamTime = 0.0;
+        // Using the default overload for team possession
+        Map<Integer, Double> teamPossessionMap = analyticsService.calculatePossessionTimePerTeam(frames);
 
-        for (double time : teamPossessionMap.values()) {
-            totalTeamTime += time;
-            System.out.println("Team's Ball Possession Time (Radius: " + radiusMeters + "m):");
-        }
-
+        System.out.println("Ball Possession Time per Team (Default Radius):");
         if (teamPossessionMap.isEmpty()) {
             System.out.println("No team kept possession within the specified radius.");
         } else {
-            final double finalTotal = totalTeamTime;
+            double totalTeamTime = teamPossessionMap.values().stream().mapToDouble(Double::doubleValue).sum();
+            
             teamPossessionMap.forEach((teamId, time) -> {
-                double percentage = (time / finalTotal) * 100.0;
-                System.out.printf("Team ID %d: %.2f seconds (%.1f%%)%n", teamId, time, percentage);
-
-
+                double percentage = totalTeamTime > 0 ? (time / totalTeamTime) * 100.0 : 0.0;
+                System.out.printf("  Team ID %d: %.2f seconds (%.1f%%)%n", teamId, time, percentage);
             });
         }
+
         System.out.println("--------------------------------------------------");
-        HeatmapGrid heatmap = analyticsService.generatePlayerHeatmap(frames, 1, 10, 10, 105.0, 68.0);
+        System.out.println("Heatmap (Player 1):");
+        // Using the default overload with standard FIFA dimensions from MatchConstants
+        HeatmapGrid heatmap = analyticsService.generatePlayerHeatmap(frames, 1);
         double[][] grid = heatmap.getGrid();
 
         for (double[] line : grid) {
-
             for (double value : line) {
                 System.out.printf("%.1fs ", value);
             }
-        System.out.println();
+            System.out.println();
         }
-
     }
 }
