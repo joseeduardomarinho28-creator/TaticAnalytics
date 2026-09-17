@@ -2,9 +2,11 @@ package com.taticanalytics.controller;
 
 import com.taticanalytics.model.PlayerStats;
 import com.taticanalytics.model.HeatmapGrid;
+import com.taticanalytics.model.FrameData;
 import com.taticanalytics.service.AnalyticsService;
 import com.taticanalytics.service.TrackingDataLoader;
-import com.taticanalytics.model.FrameData;
+import com.taticanalytics.util.MatchConstants;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,27 +33,52 @@ public class AnalyticsController {
 
     // 2. Possession Per Player
     @GetMapping("/possession/players")
-    public Map<Integer, Double> getPossessionPerPlayer(@RequestParam(name = "radius", defaultValue = "1.5") double radius) {
+    public Map<Integer, Double> getPossessionPerPlayer(
+            @RequestParam(name = "radius", required = false) Double radius) {
+        
         List<FrameData> frames = dataLoader.loadSampleData();
-        return analyticsService.calculatePossessionTimePerPlayer(frames, radius);
+        
+        if (radius != null) {
+            return analyticsService.calculatePossessionTimePerPlayer(frames, radius);
+        }
+        
+        return analyticsService.calculatePossessionTimePerPlayer(frames);
     }
 
-    // 3. Heatmap (Heatmap)
+    // 3. Possession Per Team
+    @GetMapping("/possession/teams")
+    public Map<Integer, Double> getPossessionPerTeam(
+            @RequestParam(name = "radius", required = false) Double radius) {
+        
+        List<FrameData> frames = dataLoader.loadSampleData();
+        
+        if (radius != null) {
+            return analyticsService.calculatePossessionTimePerTeam(frames, radius);
+        }
+        
+        return analyticsService.calculatePossessionTimePerTeam(frames);
+    }
+
+    // 4. Player Heatmap
     @GetMapping("/player/{id}/heatmap")
     public HeatmapGrid getPlayerHeatmap(
             @PathVariable("id") int id,
-            @RequestParam(name = "rows", defaultValue = "10") int rows,
-            @RequestParam(name = "cols", defaultValue = "10") int cols,
-            @RequestParam(name = "fieldWidth", defaultValue = "100.0") double fieldWidth,
-            @RequestParam(name = "fieldHeight", defaultValue = "100.0") double fieldHeight) {
+            @RequestParam(name = "rows", required = false) Integer rows,
+            @RequestParam(name = "cols", required = false) Integer cols,
+            @RequestParam(name = "fieldWidth", required = false) Double fieldWidth,
+            @RequestParam(name = "fieldHeight", required = false) Double fieldHeight) {
+        
         List<FrameData> frames = dataLoader.loadSampleData();
-        return analyticsService.generatePlayerHeatmap(frames, id, rows, cols, fieldWidth, fieldHeight);
-    }
 
-    // 4. Possession Per Team
-    @GetMapping("/possession/teams")
-    public Map<Integer, Double> getPossessionPerTeam(@RequestParam(name = "radius", defaultValue = "1.5") double radius) {
-        List<FrameData> frames = dataLoader.loadSampleData();
-        return analyticsService.calculatePossessionTimePerTeam(frames, radius);
+        if (rows != null || cols != null || fieldWidth != null || fieldHeight != null) {
+            int r = (rows != null) ? rows : MatchConstants.DEFAULT_GRID_ROWS;
+            int c = (cols != null) ? cols : MatchConstants.DEFAULT_GRID_COLS;
+            double w = (fieldWidth != null) ? fieldWidth : MatchConstants.FIELD_LENGTH;
+            double h = (fieldHeight != null) ? fieldHeight : MatchConstants.FIELD_WIDTH;
+
+            return analyticsService.generatePlayerHeatmap(frames, id, r, c, w, h);
+        }
+
+        return analyticsService.generatePlayerHeatmap(frames, id);
     }
 }
