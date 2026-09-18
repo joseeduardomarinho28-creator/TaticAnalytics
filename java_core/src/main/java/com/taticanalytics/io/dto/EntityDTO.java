@@ -36,4 +36,4 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 // "teamId" will be explicitly `null` or missing in the JSON. If we used the primitive `int`, 
 // Java would crash or automatically default it to 0 (which could be a real team ID).
 // Using `Integer` safely allows the value to be missing/null.
-public record EntityDTO(@JsonProperty("type") String type, @JsonProperty("id") int id, @JsonProperty("x") double x, @JsonProperty("y") double y, @JsonProperty("teamId") Integer teamId) {}
+public record EntityDTO(@JsonProperty("type") String type, @JsonProperty("id") int id, @JsonProperty("x") double x, @JsonProperty("y") double y, @JsonProperty("team_id") Integer teamId) {}
