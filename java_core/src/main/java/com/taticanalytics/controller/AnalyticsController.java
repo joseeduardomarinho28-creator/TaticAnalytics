@@ -7,7 +7,7 @@ import com.taticanalytics.model.FrameData;
 
 // Services & Utilities
 import com.taticanalytics.service.AnalyticsService;
-import com.taticanalytics.service.TrackingDataLoader;
+import com.taticanalytics.io.JsonFrameParser; // <-- Alterado: Importando o parser novo
 import com.taticanalytics.util.MatchConstants;
 
 // LIBRARY: Spring Web Annotations
@@ -30,11 +30,11 @@ public class AnalyticsController {
     // We declare our services as `private final`. We don't instantiate them with `new`.
     // Spring Boot automatically creates these services at startup and injects them here.
     private final AnalyticsService analyticsService;
-    private final TrackingDataLoader dataLoader;
+    private final JsonFrameParser frameParser; // <-- Alterado: Usando o JsonFrameParser
 
-    public AnalyticsController(AnalyticsService analyticsService, TrackingDataLoader dataLoader) {
+    public AnalyticsController(AnalyticsService analyticsService, JsonFrameParser frameParser) {
         this.analyticsService = analyticsService;
-        this.dataLoader = dataLoader;
+        this.frameParser = frameParser; // <-- Alterado: Injeção da nova dependência
     }
 
     // SPRING ANNOTATION: `@GetMapping`
@@ -46,7 +46,7 @@ public class AnalyticsController {
             // Extracts the `{id}` from the URL (e.g., /player/10/stats -> id = 10) and assigns it to the `int id` variable.
             @PathVariable("id") int id) {
         
-        List<FrameData> frames = dataLoader.loadSampleData();
+        List<FrameData> frames = frameParser.loadSampleData(); // <-- Alterado: Chamada do parser novo
         return analyticsService.calculatePlayerStats(frames, id);
     }
 
@@ -61,7 +61,7 @@ public class AnalyticsController {
             // a `Double` can safely be `null`. A primitive `double` cannot be null and would cause a crash.
             @RequestParam(name = "radius", required = false) Double radius) {
         
-        List<FrameData> frames = dataLoader.loadSampleData();
+        List<FrameData> frames = frameParser.loadSampleData(); // <-- Alterado: Chamada do parser novo
         
         // JAVA CONCEPT: Method Overloading execution
         if (radius != null) {
@@ -78,7 +78,7 @@ public class AnalyticsController {
     public Map<Integer, Double> getPossessionPerTeam(
             @RequestParam(name = "radius", required = false) Double radius) {
         
-        List<FrameData> frames = dataLoader.loadSampleData();
+        List<FrameData> frames = frameParser.loadSampleData(); // <-- Alterado: Chamada do parser novo
         
         if (radius != null) {
             return analyticsService.calculatePossessionTimePerTeam(frames, radius);
@@ -96,7 +96,7 @@ public class AnalyticsController {
             @RequestParam(name = "fieldWidth", required = false) Double fieldWidth,
             @RequestParam(name = "fieldHeight", required = false) Double fieldHeight) {
         
-        List<FrameData> frames = dataLoader.loadSampleData();
+        List<FrameData> frames = frameParser.loadSampleData(); // <-- Alterado: Chamada do parser novo
 
         // LOGIC: Graceful Fallbacks using Constants
         // If the user provided ANY of the custom parameters, we must use the full method signature.
