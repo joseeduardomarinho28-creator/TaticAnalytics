@@ -46,7 +46,7 @@ public class JsonFrameParserTest {
                 "frame_id": 1,
                 "timestamp": 0.04,
                 "entities": [
-                  { "id": 10, "type": "player", "x": 12.5, "y": 25.0, "teamId": 1 },
+                  { "id": 10, "type": "player", "x": 12.5, "y": 25.0, "team_id": 1 },
                   { "id": 0, "type": "ball", "x": 13.0, "y": 25.5 },
                   { "id": 99, "type": "referee", "x": 20.0, "y": 30.0 }
                 ]
