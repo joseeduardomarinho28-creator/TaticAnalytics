@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
+import java.io.InputStream;
 
 // Domain model imports (The "Smart" objects with behavior)
 import com.taticanalytics.model.FrameData;
@@ -53,6 +54,29 @@ public class JsonFrameParser {
         
         // Once Jackson gives us the "dumb" DTOs, we immediately convert them into our "smart" Domain models.
         return convertToDomain(dtos);
+    }
+
+    // IO CONCEPT: Classpath Resource Loading
+    // Convenience public method to load default/sample tracking data bundled in src/main/resources.
+    public List<FrameData> loadSampleData() {
+        // SYNTAX: Try-with-resources
+        // Ensures the InputStream is automatically closed after reading, preventing resource leaks.
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("tracking_sample.json")) {
+            if (is == null) {
+                throw new RuntimeException("Sample tracking data file 'tracking_sample.json' not found in classpath!");
+            }
+            
+            List<FrameDataDTO> dtos = objectMapper.readValue(
+                is, 
+                new TypeReference<List<FrameDataDTO>>() {}
+            );
+            
+            return convertToDomain(dtos);
+        } catch (IOException e) {
+            // EXCEPTION TRANSLATION: Wrapping low-level checked IOException into unchecked RuntimeException 
+            // to keep the service/controller signatures clean and consistent with domain expectations.
+            throw new RuntimeException("Failed to load sample tracking data from file", e);
+        }
     }
 
     // OOP CONCEPT: Private Helper Method
