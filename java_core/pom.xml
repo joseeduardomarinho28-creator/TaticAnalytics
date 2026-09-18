@@ -1,50 +1,142 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- LEARNING NOTE: 
+     This is an XML (eXtensible Markup Language) file. Like HTML, it uses tags 
+     (e.g., <tag>content</tag>) to structure data. 
+     In the Java world, this specific file is named `pom.xml` (Project Object Model).
+     It is the core configuration file for Maven, the most popular build tool and 
+     dependency manager for Java (similar to `pip` + `requirements.txt` in Python).
+-->
+
+<!-- SYNTAX:
+     The `xmlns` attributes define XML Namespaces. They simply tell Maven and your IDE 
+     where to find the official "dictionary" of allowed tags for this file so it can 
+     validate your code and provide auto-complete.
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    
+    <!-- MAVEN CONCEPT: 
+         This tells Maven we are using version 4.0.0 of the POM standard. 
+         This has been the standard for many years.
+    -->
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- PURPOSE:
+         These next three tags (groupId, artifactId, version) form the "Coordinates" 
+         of YOUR project. It is how Maven uniquely identifies your code in the world.
+    -->
+    
+    <!-- groupId: Usually a reversed domain name. It acts as the main namespace/folder 
+         for your project to prevent naming collisions with other projects. -->
     <groupId>com.taticanalytics</groupId>
+    
+    <!-- artifactId: The actual name of your project or module. When Maven compiles 
+         your code, it will generate a file named something like `java_core-1.0-SNAPSHOT.jar`. -->
     <artifactId>java_core</artifactId>
+    
+    <!-- version: The current version of your code. 
+         "SNAPSHOT" is a Maven convention meaning "this is actively in development 
+         and not yet a stable release." -->
     <version>1.0-SNAPSHOT</version>
 
+    <!-- MAVEN CONCEPT (Inheritance):
+         Maven allows POM files to inherit from a "parent" POM, much like classes 
+         inherit from superclasses in Object-Oriented Programming (OOP).
+         Here, your project inherits from Spring Boot's parent POM.
+    -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.2.5</version>
+        <!-- The empty relativePath tells Maven to download this parent from the 
+             internet (Maven Central Repository) rather than looking for a local file. -->
         <relativePath/>
     </parent>
 
+    <!-- PURPOSE:
+         The <properties> section defines variables that can be used throughout the POM.
+         By overriding these specific properties, we configure the Java compiler.
+    -->
     <properties>
+        <!-- Tells Maven and Spring Boot that we are writing code using Java 17 syntax. -->
         <java.version>17</java.version>
+        <!-- Forces the compiler to accept Java 17 source code. -->
         <maven.compiler.source>17</maven.compiler.source>
+        <!-- Forces the compiler to generate bytecode (.class files) compatible with a Java 17 JVM. -->
         <maven.compiler.target>17</maven.compiler.target>
+        <!-- Ensures all files are read using UTF-8 encoding, preventing issues with special characters. -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
+    <!-- PURPOSE:
+         This is where we declare external libraries (dependencies) that our project needs.
+         Maven will automatically download these from the internet and add them to our project.
+         Think of this like `requirements.txt` in Python.
+    -->
     <dependencies>
+        
+        <!-- LIBRARY:
+             Spring Boot Web Starter.
+             This single dependency brings in everything needed to build a REST API:
+             - Tomcat (an embedded web server, so we don't need to install one manually)
+             - Spring MVC (for routing HTTP requests to Java methods)
+             - Jackson (for automatically converting JSON to Java objects and vice versa)
+             
+             NOTICE: There is no <version> tag here!
+             Because we inherited from `spring-boot-starter-parent` above, the parent 
+             already knows exactly which version of this library is compatible with Spring Boot 3.2.5.
+        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- LIBRARY:
+             Spring Boot Test Starter.
+             This brings in testing libraries like JUnit 5, Mockito, and Spring Test.
+        -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            
+            <!-- MAVEN CONCEPT:
+                 <scope>test</scope> means this library will ONLY be available in the `src/test/java` folder.
+                 When we package our application for production, Maven will leave this library out
+                 to keep the final file size small and secure.
+            -->
             <scope>test</scope>
         </dependency>
     </dependencies>
 
+    <!-- PURPOSE:
+         While <dependencies> are code that YOUR code uses, <plugins> are tools that MAVEN uses
+         to build, test, and package your project.
+    -->
     <build>
         <plugins>
+            <!-- PLUGIN: Maven Compiler Plugin
+                 This tool translates your human-readable .java files into machine-readable .class bytecode.
+            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
+                    <!-- parameters=true tells the Java compiler to save the actual names of method 
+                         parameters in the bytecode (instead of renaming them to arg0, arg1).
+                         Spring Boot relies on this to map HTTP parameters to Java variables automatically. -->
                     <parameters>true</parameters>
                 </configuration>
             </plugin>
 
+            <!-- PLUGIN: Spring Boot Maven Plugin
+                 This is a crucial Spring Boot tool. Standard Maven packages your code into a basic .jar file,
+                 but it doesn't include your dependencies inside it.
+                 This plugin repackages your code into a "Fat JAR" (an executable file containing your code,
+                 all your dependencies, and the Tomcat web server).
+                 Because of this plugin, you can run your entire web app with a simple:
+                 `java -jar myapp.jar`
+            -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
