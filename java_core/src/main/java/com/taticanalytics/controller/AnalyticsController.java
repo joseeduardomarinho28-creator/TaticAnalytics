@@ -14,6 +14,7 @@ import com.taticanalytics.util.MatchConstants;
 // These annotations map web concepts (URLs, HTTP Methods, Query Strings) directly to Java methods.
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -40,11 +41,17 @@ public class AnalyticsController {
     // SPRING ANNOTATION: `@GetMapping`
     // Maps HTTP GET requests to this method.
     // The `{id}` in the path is a dynamic placeholder.
+    // LEARNING NOTE: Checked Exceptions (`throws IOException`)
+    // `frameParser.loadSampleData()` reads a file from disk, which can fail (e.g., file missing).
+    // Java forces us to acknowledge this risk: either `catch` it here, or `throws` it up the
+    // call stack, like we do below. Since we don't yet have custom error handling for this case,
+    // we let it propagate; Spring will turn any uncaught exception into an HTTP 500 response.
+    // This is a known gap (no dedicated error handling here yet) tracked in the README.
     @GetMapping("/player/{id}/stats")
     public PlayerStats getPlayerStats(
             // SPRING ANNOTATION: `@PathVariable`
             // Extracts the `{id}` from the URL (e.g., /player/10/stats -> id = 10) and assigns it to the `int id` variable.
-            @PathVariable("id") int id) {
+            @PathVariable("id") int id) throws IOException {
 
         List<FrameData> frames = frameParser.loadSampleData(); // <-- Changed: calling the new parser
         return analyticsService.calculatePlayerStats(frames, id);
@@ -59,7 +66,7 @@ public class AnalyticsController {
             // LEARNING NOTE: Wrapper Class (`Double`)
             // We use `Double` instead of the primitive `double` here. If the user doesn't provide the radius,
             // a `Double` can safely be `null`. A primitive `double` cannot be null and would cause a crash.
-            @RequestParam(name = "radius", required = false) Double radius) {
+            @RequestParam(name = "radius", required = false) Double radius) throws IOException {
 
         List<FrameData> frames = frameParser.loadSampleData(); // <-- Changed: calling the new parser
 
@@ -76,7 +83,7 @@ public class AnalyticsController {
     // 3. Possession Per Team
     @GetMapping("/possession/teams")
     public Map<Integer, Double> getPossessionPerTeam(
-            @RequestParam(name = "radius", required = false) Double radius) {
+            @RequestParam(name = "radius", required = false) Double radius) throws IOException {
 
         List<FrameData> frames = frameParser.loadSampleData(); // <-- Changed: calling the new parser
 
@@ -94,7 +101,7 @@ public class AnalyticsController {
             @RequestParam(name = "rows", required = false) Integer rows,
             @RequestParam(name = "cols", required = false) Integer cols,
             @RequestParam(name = "fieldWidth", required = false) Double fieldWidth,
-            @RequestParam(name = "fieldHeight", required = false) Double fieldHeight) {
+            @RequestParam(name = "fieldHeight", required = false) Double fieldHeight) throws IOException {
 
         List<FrameData> frames = frameParser.loadSampleData(); // <-- Changed: calling the new parser
 
