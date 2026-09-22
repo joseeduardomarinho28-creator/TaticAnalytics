@@ -1,0 +1,36 @@
+name: Java Core Tests
+
+# GATILHO (explicado na conversa): roda somente em Pull Requests
+# direcionados à branch `main`. É esse "status check" (o nome do job,
+# abaixo) que a regra "Require status checks to pass" do Ruleset vai
+# passar a exigir como aprovado antes de liberar o merge.
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: mvn test (java_core)
+    runs-on: ubuntu-latest
+
+    steps:
+      # Baixa o código do PR para a máquina virtual do GitHub Actions.
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Instala o JDK 17 (distribuição Temurin) e ativa cache automático
+      # das dependências Maven (~/.m2), acelerando execuções futuras.
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+          cache: 'maven'
+          cache-dependency-path: java_core/pom.xml
+
+      # O pom.xml vive em java_core/, não na raiz do monorepo — por isso
+      # todo comando Maven precisa rodar com este working-directory.
+      - name: Run tests
+        working-directory: java_core
+        run: mvn -B test
