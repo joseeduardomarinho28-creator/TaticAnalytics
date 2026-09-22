@@ -27,7 +27,7 @@ replay_pid*
 java_core/target/
 
 # ==========================================
-# Python Specifics (for python_vision module)
+# Python Specifics (for cv_pipeline module)
 # ==========================================
 __pycache__/
 *.py[cod]
@@ -39,3 +39,16 @@ env/
 .idea/
 .vscode/
 *.log
+
+# Packaging / build artifacts
+*.egg-info/
+dist/
+build/
+
+# Environment variables
+.env
+
+# Common CV/ML working directories
+*.pt
+*.onnx
+.ipynb_checkpoints/
