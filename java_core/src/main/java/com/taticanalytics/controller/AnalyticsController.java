@@ -7,7 +7,7 @@ import com.taticanalytics.model.FrameData;
 
 // Services & Utilities
 import com.taticanalytics.service.AnalyticsService;
-import com.taticanalytics.io.JsonFrameParser; // <-- Alterado: Importando o parser novo
+import com.taticanalytics.io.JsonFrameParser; // <-- Changed: importing the new parser
 import com.taticanalytics.util.MatchConstants;
 
 // LIBRARY: Spring Web Annotations
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 // SPRING ANNOTATION: `@RestController`
-// Combines `@Controller` and `@ResponseBody`. It tells Spring: "This class receives HTTP requests, 
+// Combines `@Controller` and `@ResponseBody`. It tells Spring: "This class receives HTTP requests,
 // and whatever objects its methods return should be automatically converted to JSON and sent back as the HTTP response."
 @RestController
 // SPRING ANNOTATION: `@RequestMapping`
@@ -30,23 +30,23 @@ public class AnalyticsController {
     // We declare our services as `private final`. We don't instantiate them with `new`.
     // Spring Boot automatically creates these services at startup and injects them here.
     private final AnalyticsService analyticsService;
-    private final JsonFrameParser frameParser; // <-- Alterado: Usando o JsonFrameParser
+    private final JsonFrameParser frameParser; // <-- Changed: using JsonFrameParser
 
     public AnalyticsController(AnalyticsService analyticsService, JsonFrameParser frameParser) {
         this.analyticsService = analyticsService;
-        this.frameParser = frameParser; // <-- Alterado: Injeção da nova dependência
+        this.frameParser = frameParser; // <-- Changed: injecting the new dependency
     }
 
     // SPRING ANNOTATION: `@GetMapping`
-    // Maps HTTP GET requests to this method. 
+    // Maps HTTP GET requests to this method.
     // The `{id}` in the path is a dynamic placeholder.
     @GetMapping("/player/{id}/stats")
     public PlayerStats getPlayerStats(
             // SPRING ANNOTATION: `@PathVariable`
             // Extracts the `{id}` from the URL (e.g., /player/10/stats -> id = 10) and assigns it to the `int id` variable.
             @PathVariable("id") int id) {
-        
-        List<FrameData> frames = frameParser.loadSampleData(); // <-- Alterado: Chamada do parser novo
+
+        List<FrameData> frames = frameParser.loadSampleData(); // <-- Changed: calling the new parser
         return analyticsService.calculatePlayerStats(frames, id);
     }
 
@@ -60,15 +60,15 @@ public class AnalyticsController {
             // We use `Double` instead of the primitive `double` here. If the user doesn't provide the radius,
             // a `Double` can safely be `null`. A primitive `double` cannot be null and would cause a crash.
             @RequestParam(name = "radius", required = false) Double radius) {
-        
-        List<FrameData> frames = frameParser.loadSampleData(); // <-- Alterado: Chamada do parser novo
-        
+
+        List<FrameData> frames = frameParser.loadSampleData(); // <-- Changed: calling the new parser
+
         // JAVA CONCEPT: Method Overloading execution
         if (radius != null) {
             // User provided a custom radius, use the full method.
             return analyticsService.calculatePossessionTimePerPlayer(frames, radius);
         }
-        
+
         // User provided nothing, use the overloaded method that relies on default constants.
         return analyticsService.calculatePossessionTimePerPlayer(frames);
     }
@@ -77,13 +77,13 @@ public class AnalyticsController {
     @GetMapping("/possession/teams")
     public Map<Integer, Double> getPossessionPerTeam(
             @RequestParam(name = "radius", required = false) Double radius) {
-        
-        List<FrameData> frames = frameParser.loadSampleData(); // <-- Alterado: Chamada do parser novo
-        
+
+        List<FrameData> frames = frameParser.loadSampleData(); // <-- Changed: calling the new parser
+
         if (radius != null) {
             return analyticsService.calculatePossessionTimePerTeam(frames, radius);
         }
-        
+
         return analyticsService.calculatePossessionTimePerTeam(frames);
     }
 
@@ -95,13 +95,13 @@ public class AnalyticsController {
             @RequestParam(name = "cols", required = false) Integer cols,
             @RequestParam(name = "fieldWidth", required = false) Double fieldWidth,
             @RequestParam(name = "fieldHeight", required = false) Double fieldHeight) {
-        
-        List<FrameData> frames = frameParser.loadSampleData(); // <-- Alterado: Chamada do parser novo
+
+        List<FrameData> frames = frameParser.loadSampleData(); // <-- Changed: calling the new parser
 
         // LOGIC: Graceful Fallbacks using Constants
         // If the user provided ANY of the custom parameters, we must use the full method signature.
         if (rows != null || cols != null || fieldWidth != null || fieldHeight != null) {
-            
+
             // SYNTAX: Ternary Operator
             // For each parameter, we check: "Did the user provide this specific one?"
             // If yes, use it. If no, fall back to our central `MatchConstants`.
