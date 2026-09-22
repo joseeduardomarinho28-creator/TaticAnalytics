@@ -9,6 +9,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
 import java.util.ArrayList;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 // Domain model imports (The "Smart" objects with behavior)
 import com.taticanalytics.model.FrameData;
@@ -22,7 +24,7 @@ import com.taticanalytics.io.dto.EntityDTO;
 import com.taticanalytics.io.dto.FrameDataDTO;
 
 // LIBRARY: Spring Framework
-// `@Component` tells Spring: "Please create and manage a single instance of this class (a Singleton). 
+// `@Component` tells Spring: "Please create and manage a single instance of this class (a Singleton).
 // Whenever another class needs a JsonFrameParser, inject this instance automatically."
 import org.springframework.stereotype.Component;
 
@@ -33,39 +35,51 @@ import org.springframework.stereotype.Component;
 // 2. Mapping: DTOs -> Domain Models (using custom Java logic)
 @Component
 public class JsonFrameParser {
-    
+
     // The Jackson engine that does the heavy lifting of reading JSON.
+
     private final ObjectMapper objectMapper;
 
     public JsonFrameParser() {
         this.objectMapper = new ObjectMapper();
     }
 
+    // PURPOSE:
+    // Convenience method used by the controller layer. It reads the sample tracking
+    // file straight from the classpath and hands it off to `parseJsonString`, so
+    // callers don't need to deal with file paths themselves.
+    // LEARNING NOTE: `Files.readString(Paths.get(...))` is the modern (Java 11+) way
+    // to read a whole text file into a single String in one line.
+    public List<FrameData> loadSampleData() throws IOException {
+        String jsonContent = Files.readString(Paths.get("src/main/resources/tracking_sample.json"));
+        return parseJsonString(jsonContent);
+    }
+
     public List<FrameData> parseJsonString(String jsonContent) throws IOException {
-        
+
         // SYNTAX / JAVA CONCEPT: Type Erasure & TypeReference
         // In Java, at runtime, a `List<FrameDataDTO>` forgets what it holds and just becomes a `List`.
-        // If we just told Jackson to return a `List.class`, it wouldn't know what to put inside it, 
+        // If we just told Jackson to return a `List.class`, it wouldn't know what to put inside it,
         // and would default to returning a List of standard Maps/Dictionaries.
-        // `new TypeReference<List<FrameDataDTO>>() {}` is a clever workaround that forces Java to 
+        // `new TypeReference<List<FrameDataDTO>>() {}` is a clever workaround that forces Java to
         // remember the exact nested type so Jackson can build the correct DTOs.
         List<FrameDataDTO> dtos = objectMapper.readValue(jsonContent, new TypeReference<List<FrameDataDTO>>() {});
-        
+
         // Once Jackson gives us the "dumb" DTOs, we immediately convert them into our "smart" Domain models.
         return convertToDomain(dtos);
     }
 
     // OOP CONCEPT: Private Helper Method
-    // This method is hidden from the outside world. Other classes only care that they give this 
+    // This method is hidden from the outside world. Other classes only care that they give this
     // parser a String and get back a List of Domain models.
     private List<FrameData> convertToDomain(List<FrameDataDTO> dtos) {
         List<FrameData> frames = new ArrayList<>();
 
         // Loop through each frame DTO
         for (FrameDataDTO dto : dtos) {
-            
+
             // SYNTAX: Record Accessors
-            // Notice it's `dto.frameId()` and `dto.timestamp()`, NOT `dto.getFrameId()`. 
+            // Notice it's `dto.frameId()` and `dto.timestamp()`, NOT `dto.getFrameId()`.
             // This is because FrameDataDTO is a Java `record`.
             FrameData frame = new FrameData(dto.frameId(), dto.timestamp());
 
@@ -74,7 +88,7 @@ public class JsonFrameParser {
 
                 // Loop through each entity DTO inside this frame
                 for (EntityDTO entityDTO : dto.entities()) {
-                    
+
                     // Call the factory method to figure out if it's a Player, Ball, or Referee
                     Entity entity = mapEntity(entityDTO);
 
@@ -92,7 +106,7 @@ public class JsonFrameParser {
     // OOP CONCEPT: Simple Factory Pattern
     // This method takes raw data and decides WHICH specific subclass (Player, Ball, Referee) to instantiate.
     private Entity mapEntity(EntityDTO dto) {
-        
+
         // SYNTAX: Safe String Comparison
         // `"player".equalsIgnoreCase(dto.type())` is safer than `dto.type().equalsIgnoreCase("player")`.
         // If `dto.type()` is null, the first one just returns false. The second one throws a NullPointerException and crashes.
@@ -102,7 +116,7 @@ public class JsonFrameParser {
             // Remember that in our EntityDTO, `teamId` is an `Integer` (wrapper class), so it can be null.
             // If the JSON didn't have a team_id, we default it to -1 (or any invalid team ID).
             int team = (dto.teamId() != null) ? dto.teamId() : -1;
-            
+
             // Create and return the Domain Model
             return new Player(dto.id(), dto.x(), dto.y(), team);
 
