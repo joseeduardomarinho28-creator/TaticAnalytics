@@ -19,22 +19,55 @@ pelo Git. Não tente versioná-los.
 
 ## Vídeo de referência do MVP
 
-O material definido na TA-51 é o trecho de **2:30 a 3:00** de
+O material originalmente definido na TA-51 é o trecho de **2:30 a 3:00** de
 [2026 World Cup: Argentina 3-0 Algeria — Full Match Tactical Cam](https://www.youtube.com/watch?v=t_nEnsBQ988).
 Para respeitar as condições da fonte, obtenha-o por gravação de tela para uso
 privado e acadêmico, em 1080p, sem marca d'água ou cronômetro. Não use sites ou
 aplicativos de terceiros para baixar o vídeo e não versione o clipe no Git.
 
-Recorte a gravação para 30 segundos exatos, ajustando o instante inicial à sua
-gravação:
+O clipe validado em 29 de setembro de 2026 usa aproximadamente **2:59 a 3:29**
+do vídeo-fonte. O início foi adiantado porque a gravação ainda exibia os
+controles do player e a janela imediatamente anterior acumulava um giro maior
+da câmera. Essa escolha mantém o círculo central ou uma das grandes áreas
+visível durante todo o trecho.
+
+Recorte e normalize a gravação para 30 segundos exatos, ajustando o instante
+inicial e o recorte das bordas à sua gravação. `-frames:v 900` garante a
+quantidade exata mesmo quando a captura original usa taxa de quadros variável:
 
 ```bash
-ffmpeg -ss <inicio> -i gravacao.mp4 -t 30 -c:v libx264 -crf 18 -an trecho_mvp.mp4
+ffmpeg -ss <inicio> -i gravacao.mov \
+  -vf "crop=<largura>:<altura>:<x>:<y>,scale=1920:1080:flags=lanczos,fps=30" \
+  -frames:v 900 -an -c:v libx264 -crf 18 -pix_fmt yuv420p \
+  -movflags +faststart trecho_mvp.mp4
 ```
 
 Depois, execute a inspeção completa documentada abaixo e compare com o esperado:
 aproximadamente 30 fps, 1920×1080 e 900 frames. Diferenças reais devem ser
 registradas na TA-51, nunca corrigidas artificialmente no código.
+
+### Resultado da validação da TA-51
+
+O arquivo validado permanece fora do Git. Ele contém 900 quadros H.264,
+1920×1080, 30 fps constantes e 30,000 s de duração. A decodificação integral
+confirmou os 900 quadros, e a detecção automática de mudança de cena não
+encontrou cortes ou replays.
+
+A homografia estimada com ORB/RANSAC entre o primeiro quadro e quadros a cada
+5 segundos mediu o movimento abaixo. Os `inliers` permaneceram entre 30% e 51%
+dos matches, portanto todas as cinco estimativas são utilizáveis.
+
+| Tempo | Deslocamento do centro | Escala |
+| ---: | ---: | ---: |
+| 5 s | (-94, -14) px | 1,046 |
+| 10 s | (-217, -9) px | 1,108 |
+| 15 s | (-235, +3) px | 1,122 |
+| 20 s | (-256, -13) px | 1,068 |
+| 25 s | (-354, +12) px | 1,100 |
+
+O movimento é gradual, mas relevante: não reutilize uma única homografia nos
+900 quadros. Calibre um quadro para a TA-58 e use a propagação/recalibração da
+TA-109 antes de interpretar posições métricas ao longo do clipe inteiro.
 
 ## Instalação limpa
 
