@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
+from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Sequence
 
 import cv2
 import numpy as np
@@ -21,7 +21,7 @@ class CalibrationPoint:
     quality: str = "A"
 
     @classmethod
-    def from_field_point(cls, point: FieldPoint, pixel: Sequence[float]) -> "CalibrationPoint":
+    def from_field_point(cls, point: FieldPoint, pixel: Sequence[float]) -> CalibrationPoint:
         return cls(point.name, (float(pixel[0]), float(pixel[1])), point.metre, point.quality)
 
 
@@ -124,8 +124,14 @@ def draw_field_overlay(
         origin_int = tuple(np.rint(origin).astype(int))
         cv2.circle(output, origin_int, 7, (0, 0, 255), -1)
         cv2.putText(
-            output, "(0,0)", (origin_int[0] + 9, origin_int[1] - 9),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2, cv2.LINE_AA,
+            output,
+            "(0,0)",
+            (origin_int[0] + 9, origin_int[1] - 9),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 0, 255),
+            2,
+            cv2.LINE_AA,
         )
     return output
 
@@ -144,8 +150,12 @@ def save_calibration(
         "frame_index": int(frame_index),
         "image_size": {"width": int(image_size[0]), "height": int(image_size[1])},
         "coordinate_system": {
-            "unit": "metre", "origin": "top_left", "x_axis": "right", "y_axis": "down",
-            "field_length": FIELD_LENGTH, "field_width": FIELD_WIDTH,
+            "unit": "metre",
+            "origin": "top_left",
+            "x_axis": "right",
+            "y_axis": "down",
+            "field_length": FIELD_LENGTH,
+            "field_width": FIELD_WIDTH,
         },
         "ransac_threshold_metres": result.ransac_threshold_metres,
         "matrix_pixel_to_metre": result.matrix.tolist(),
@@ -160,12 +170,20 @@ def save_calibration(
                 "error_metres": error,
                 "inlier": inlier,
             }
-            for point, error, inlier in zip(result.points, result.errors_metres, result.inliers)
+            for point, error, inlier in zip(
+                result.points,
+                result.errors_metres,
+                result.inliers,
+                strict=True,
+            )
         ],
     }
     destination = Path(path)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    destination.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
 
 
 def load_calibration(path: str | Path) -> CalibrationResult:

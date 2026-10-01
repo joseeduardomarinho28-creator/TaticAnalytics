@@ -1,0 +1,7 @@
+# Direct dependencies. Update intentionally, rebuild requirements.txt in a
+# clean virtual environment, then run the full environment check and tests.
+numpy==2.4.6
+opencv-python==4.14.0.94
+torch==2.14.0
+torchvision==0.29.0
+ultralytics==8.4.163

@@ -1,0 +1,42 @@
+# Local Python environments
+.venv/
+venv/
+env/
+
+# Python caches and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# IDE and operating-system files
+.idea/
+.vscode/
+.DS_Store
+
+# Model weights and exported models
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# Input videos are local assets and must not enter Git
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.webm
+
+# Generated pipeline artifacts
+output/*
+!output/.gitkeep
+
+# Runtime files
+*.log
+.env
