@@ -10,6 +10,7 @@ import com.taticanalytics.model.Entity;
 import com.taticanalytics.model.Player;
 import com.taticanalytics.model.PlayerStats;
 import com.taticanalytics.model.Ball;
+import com.taticanalytics.model.Referee;
 import com.taticanalytics.model.FrameData;
 
 // LEARNING NOTE:
@@ -265,5 +266,60 @@ public class AnalyticsServiceTest {
 
         assertEquals(2.0, teamPossession.get(10), 0.001);
         assertEquals(3.0, teamPossession.get(20), 0.001);
+    }
+
+    @Test
+    public void shouldIgnoreRefereeWithSamePlayerIdWhenCalculatingStats() {
+        // PURPOSE: Regression test for TA-107 (matching an entity by id only, ignoring its type).
+        // A tracker can give a player an id that a referee also uses. Both appear in the same
+        // frames, but they are in completely different places on the pitch.
+        List<FrameData> frames = new ArrayList<>();
+
+        // Frame 1: Player 5 is at (0, 0). Referee 5 is far away, at (50, 50).
+        FrameData frame1 = new FrameData(1, 0.0);
+        frame1.addEntity(new Player(5, 0.0, 0.0, 10));
+        frame1.addEntity(new Referee(5, 50.0, 50.0));
+        frames.add(frame1);
+
+        // Frame 2: Player 5 moves 5 meters (3-4-5 triangle). The referee also moves 5 meters.
+        FrameData frame2 = new FrameData(2, 1.0);
+        frame2.addEntity(new Player(5, 3.0, 4.0, 10));
+        frame2.addEntity(new Referee(5, 53.0, 54.0));
+        frames.add(frame2);
+
+        AnalyticsService service = new AnalyticsService();
+        PlayerStats stats = service.calculatePlayerStats(frames, 5);
+
+        // ASSERT: Only the PLAYER's movement counts: 5 meters in 1 second.
+        // LEARNING NOTE: Before the fix, the loop visited the player and then the referee (same id),
+        // so `previousEntity` ended frame 1 pointing at the referee. In frame 2, the distance was
+        // measured from the referee's old position to the player's new one (~65 meters!).
+        assertEquals(5.0, stats.getTotalDistance(), 0.001);
+        assertEquals(5.0, stats.getMaxSpeed(), 0.001);
+    }
+
+    @Test
+    public void shouldReturnZeroWhenRequestedIdBelongsToBall() {
+        // PURPOSE: Documents the decision taken in TA-107: an id that does not belong to a
+        // `Player` (here, the ball) behaves exactly like a non-existent player and returns zeros.
+        List<FrameData> frames = new ArrayList<>();
+
+        // The ball always uses id 0. It moves 5 meters between the two frames.
+        FrameData frame1 = new FrameData(1, 0.0);
+        frame1.addEntity(new Ball(0, 10.0, 10.0));
+        frame1.addEntity(new Player(1, 20.0, 20.0, 10));
+        frames.add(frame1);
+
+        FrameData frame2 = new FrameData(2, 1.0);
+        frame2.addEntity(new Ball(0, 13.0, 14.0));
+        frame2.addEntity(new Player(1, 20.0, 20.0, 10));
+        frames.add(frame2);
+
+        AnalyticsService service = new AnalyticsService();
+        PlayerStats stats = service.calculatePlayerStats(frames, 0);
+
+        // ASSERT: Asking for "player 0" must NOT return the ball's movement.
+        assertEquals(0.0, stats.getTotalDistance(), 0.001);
+        assertEquals(0.0, stats.getMaxSpeed(), 0.001);
     }
 }
