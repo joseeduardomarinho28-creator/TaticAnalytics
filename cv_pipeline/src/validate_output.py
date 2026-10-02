@@ -56,16 +56,12 @@ class ValidationReport:
         if error_counts:
             lines.append(
                 "Error categories: "
-                + ", ".join(
-                    f"{code}={count}" for code, count in sorted(error_counts.items())
-                )
+                + ", ".join(f"{code}={count}" for code, count in sorted(error_counts.items()))
             )
         if warning_counts:
             lines.append(
                 "Warning categories: "
-                + ", ".join(
-                    f"{code}={count}" for code, count in sorted(warning_counts.items())
-                )
+                + ", ".join(f"{code}={count}" for code, count in sorted(warning_counts.items()))
             )
         details = [
             *(f"ERROR {issue.format()}" for issue in self.errors),
@@ -74,9 +70,7 @@ class ValidationReport:
         maximum_details = 50
         lines.extend(details[:maximum_details])
         if len(details) > maximum_details:
-            lines.append(
-                f"... {len(details) - maximum_details} additional messages omitted"
-            )
+            lines.append(f"... {len(details) - maximum_details} additional messages omitted")
         if self.metrics:
             lines.append("Metrics:")
             lines.extend(f"  {key}: {value}" for key, value in self.metrics.items())
@@ -245,9 +239,7 @@ def _validate_match_info(value: object, report: ValidationReport) -> float | Non
 
     video_name = value.get("video_name")
     if not isinstance(video_name, str) or not video_name.strip():
-        report.add_error(
-            "match_info.video_name", f"{path}.video_name", "must be non-empty text"
-        )
+        report.add_error("match_info.video_name", f"{path}.video_name", "must be non-empty text")
 
     frame_rate = value.get("frame_rate")
     valid_frame_rate = _number(frame_rate)
@@ -263,9 +255,7 @@ def _validate_match_info(value: object, report: ValidationReport) -> float | Non
 
     resolution = value.get("resolution")
     if not isinstance(resolution, Mapping):
-        report.add_error(
-            "match_info.resolution", f"{path}.resolution", "must be an object"
-        )
+        report.add_error("match_info.resolution", f"{path}.resolution", "must be an object")
     else:
         _check_exact_keys(
             resolution,
@@ -309,9 +299,7 @@ def _validate_frame_structure(
 
     timestamp = _number(frame.get("timestamp"))
     if timestamp is None:
-        report.add_error(
-            "frame.timestamp_type", f"{path}.timestamp", "must be a finite number"
-        )
+        report.add_error("frame.timestamp_type", f"{path}.timestamp", "must be a finite number")
         numeric_timestamp = math.nan
     else:
         numeric_timestamp = timestamp
@@ -396,9 +384,7 @@ def _validate_entity(
         if team_id is not None:
             report.add_error("entity.referee_team", f"{path}.team_id", "must be null")
         if not _integer(entity_id) or entity_id < 1000:
-            report.add_error(
-                "entity.referee_id", f"{path}.id", "must be 1000 or greater"
-            )
+            report.add_error("entity.referee_id", f"{path}.id", "must be 1000 or greater")
 
     for coordinate_name, coordinate in (("x", entity["x"]), ("y", entity["y"])):
         if _has_more_than_two_decimal_places(coordinate):

@@ -45,9 +45,7 @@ class EntityObservation:
                 details.append(f"missing {sorted(missing)}")
             if extra:
                 details.append(f"unexpected {sorted(extra)}")
-            raise ExportContractError(
-                f"Invalid observation fields: {', '.join(details)}"
-            )
+            raise ExportContractError(f"Invalid observation fields: {', '.join(details)}")
         return cls(
             tracker_id=value["tracker_id"],
             entity_type=value["type"],
@@ -114,15 +112,11 @@ class TrackingJsonExporter:
             raise ExportContractError("resolution must contain two positive integers")
         normalized_tolerance = _finite_float(clamp_tolerance_metres)
         if normalized_tolerance is None or normalized_tolerance < 0:
-            raise ExportContractError(
-                "clamp_tolerance_metres must be finite and non-negative"
-            )
+            raise ExportContractError("clamp_tolerance_metres must be finite and non-negative")
         if expected_total_frames is not None and (
             not _is_integer(expected_total_frames) or expected_total_frames < 1
         ):
-            raise ExportContractError(
-                "expected_total_frames must be a positive integer"
-            )
+            raise ExportContractError("expected_total_frames must be a positive integer")
 
         self.video_name = video_name
         self.frame_rate = normalized_frame_rate
@@ -157,9 +151,7 @@ class TrackingJsonExporter:
         if calibration_reliable:
             for raw_entity in entities:
                 entity = _coerce_observation(raw_entity)
-                normalized, clamped_count, was_discarded = self._normalize_entity(
-                    entity, frame_id
-                )
+                normalized, clamped_count, was_discarded = self._normalize_entity(entity, frame_id)
                 clamped_coordinates += clamped_count
                 discarded_entities += int(was_discarded)
                 if normalized is None:
@@ -233,9 +225,7 @@ class TrackingJsonExporter:
                 delete=False,
             ) as temporary:
                 temporary_path = Path(temporary.name)
-                json.dump(
-                    payload, temporary, indent=2, ensure_ascii=False, allow_nan=False
-                )
+                json.dump(payload, temporary, indent=2, ensure_ascii=False, allow_nan=False)
                 temporary.write("\n")
                 temporary.flush()
                 os.fsync(temporary.fileno())
@@ -261,9 +251,7 @@ class TrackingJsonExporter:
     ) -> tuple[dict[str, object] | None, int, bool]:
         entity_type = entity.entity_type
         if not isinstance(entity_type, str) or entity_type not in ENTITY_TYPES:
-            raise ExportContractError(
-                f"Frame {frame_id}: unsupported entity type {entity_type!r}"
-            )
+            raise ExportContractError(f"Frame {frame_id}: unsupported entity type {entity_type!r}")
         if not _is_integer(entity.tracker_id) or entity.tracker_id < 0:
             raise ExportContractError(
                 f"Frame {frame_id}: tracker_id must be a non-negative integer"
@@ -311,26 +299,18 @@ class TrackingJsonExporter:
     ) -> tuple[int, int | None]:
         if entity.entity_type == "ball":
             if entity.team_id is not None:
-                raise ExportContractError(
-                    f"Frame {frame_id}: ball team_id must be null"
-                )
+                raise ExportContractError(f"Frame {frame_id}: ball team_id must be null")
             return 0, None
 
         if entity.entity_type == "referee":
             if entity.team_id is not None:
-                raise ExportContractError(
-                    f"Frame {frame_id}: referee team_id must be null"
-                )
+                raise ExportContractError(f"Frame {frame_id}: referee team_id must be null")
             return 1000 + entity.tracker_id, None
 
         if entity.tracker_id < 1:
-            raise ExportContractError(
-                f"Frame {frame_id}: player tracker_id must be 1 or greater"
-            )
+            raise ExportContractError(f"Frame {frame_id}: player tracker_id must be 1 or greater")
         if not _is_integer(entity.team_id):
-            raise ExportContractError(
-                f"Frame {frame_id}: player team_id must be an integer"
-            )
+            raise ExportContractError(f"Frame {frame_id}: player team_id must be an integer")
 
         if self.team_ids_zero_based:
             if entity.team_id not in (0, 1):
@@ -340,9 +320,7 @@ class TrackingJsonExporter:
             team_id = entity.team_id + 1
         else:
             if entity.team_id not in (1, 2):
-                raise ExportContractError(
-                    f"Frame {frame_id}: player team_id must be 1 or 2"
-                )
+                raise ExportContractError(f"Frame {frame_id}: player team_id must be 1 or 2")
             team_id = entity.team_id
         return entity.tracker_id, team_id
 
@@ -384,9 +362,7 @@ def _coerce_observation(
         return value
     if isinstance(value, Mapping):
         return EntityObservation.from_mapping(value)
-    raise ExportContractError(
-        "entities must contain EntityObservation or mapping values"
-    )
+    raise ExportContractError("entities must contain EntityObservation or mapping values")
 
 
 def _normalize_coordinate(
@@ -447,22 +423,16 @@ def _parse_cli_input(
     try:
         payload = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as error:
-        raise ExportContractError(
-            f"Could not read observation input: {error}"
-        ) from error
+        raise ExportContractError(f"Could not read observation input: {error}") from error
     if not isinstance(payload, dict):
         raise ExportContractError("Observation input root must be an object")
 
     required = {"video_name", "frame_rate", "resolution", "frames"}
     if set(payload) != required:
-        raise ExportContractError(
-            f"Observation input fields must be exactly {sorted(required)}"
-        )
+        raise ExportContractError(f"Observation input fields must be exactly {sorted(required)}")
     resolution = payload["resolution"]
     if not isinstance(resolution, dict) or set(resolution) != {"width", "height"}:
-        raise ExportContractError(
-            "Observation resolution needs exactly width and height"
-        )
+        raise ExportContractError("Observation resolution needs exactly width and height")
     raw_frames = payload["frames"]
     if not isinstance(raw_frames, list):
         raise ExportContractError("Observation frames must be a list")
@@ -472,14 +442,10 @@ def _parse_cli_input(
         if not isinstance(raw_frame, dict):
             raise ExportContractError(f"Observation frame {index} must be an object")
         if set(raw_frame) - {"entities", "calibration_reliable"}:
-            raise ExportContractError(
-                f"Observation frame {index} has unexpected fields"
-            )
+            raise ExportContractError(f"Observation frame {index} has unexpected fields")
         entities = raw_frame.get("entities", [])
         if not isinstance(entities, list):
-            raise ExportContractError(
-                f"Observation frame {index} entities must be a list"
-            )
+            raise ExportContractError(f"Observation frame {index} entities must be a list")
         frames.append(
             FrameObservation(
                 entities=entities,

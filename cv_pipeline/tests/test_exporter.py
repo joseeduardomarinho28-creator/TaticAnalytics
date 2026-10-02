@@ -52,9 +52,7 @@ class TrackingJsonExporterTest(unittest.TestCase):
             set(payload["match_info"]),
         )
         self.assertEqual([1, 2, 3], [frame["frame_id"] for frame in payload["frames"]])
-        self.assertEqual(
-            [0.033, 0.067, 0.1], [frame["timestamp"] for frame in payload["frames"]]
-        )
+        self.assertEqual([0.033, 0.067, 0.1], [frame["timestamp"] for frame in payload["frames"]])
         self.assertEqual([], payload["frames"][1]["entities"])
         self.assertEqual([], payload["frames"][2]["entities"])
         self.assertEqual(
@@ -104,9 +102,7 @@ class TrackingJsonExporterTest(unittest.TestCase):
             output = Path(directory) / "tracking.json"
             exporter.write(output)
             payload = json.loads(output.read_text(encoding="utf-8"))
-        self.assertEqual(
-            [1, 2], [entity["team_id"] for entity in payload["frames"][0]["entities"]]
-        )
+        self.assertEqual([1, 2], [entity["team_id"] for entity in payload["frames"][0]["entities"]])
 
     def test_rejects_duplicate_ids_after_normalization(self):
         with self.assertRaisesRegex(ExportContractError, "duplicated"):

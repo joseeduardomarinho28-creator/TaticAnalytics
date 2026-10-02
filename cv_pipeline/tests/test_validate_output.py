@@ -72,9 +72,7 @@ class ValidateOutputTest(unittest.TestCase):
             lambda payload: payload["match_info"].update({"duration": 30}),
             lambda payload: payload["match_info"]["resolution"].update({"channels": 3}),
             lambda payload: payload["frames"][0].update({"confidence": 0.9}),
-            lambda payload: payload["frames"][0]["entities"][0].update(
-                {"confidence": 0.9}
-            ),
+            lambda payload: payload["frames"][0]["entities"][0].update({"confidence": 0.9}),
         )
         for change in changes:
             with self.subTest(change=change):
