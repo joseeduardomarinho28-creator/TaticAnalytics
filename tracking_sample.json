@@ -16,49 +16,2275 @@
           "id": 0,
           "type": "ball",
           "team_id": null,
-          "x": 960.5,
-          "y": 540.0
+          "x": 48.9,
+          "y": 34.42
         },
         {
           "id": 1,
           "type": "player",
           "team_id": 1,
-          "x": 350.2,
-          "y": 420.8
+          "x": 48.0,
+          "y": 34.42
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.23,
+          "y": 20.3
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.37,
+          "y": 48.24
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.27,
+          "y": 34.06
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 53.12,
+          "y": 32.49
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.34,
+          "y": 20.27
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.39,
+          "y": 48.1
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 70.15,
+          "y": 33.82
         },
         {
           "id": 99,
           "type": "referee",
           "team_id": null,
-          "x": 500.0,
-          "y": 450.0
+          "x": 50.0,
+          "y": 10.17
         }
       ]
     },
     {
       "frame_id": 2,
-      "timestamp": 0.066,
+      "timestamp": 0.067,
       "entities": [
         {
           "id": 0,
           "type": "ball",
           "team_id": null,
-          "x": 962.0,
-          "y": 541.0
+          "x": 49.02,
+          "y": 34.47
         },
         {
           "id": 1,
           "type": "player",
           "team_id": 1,
-          "x": 351.0,
-          "y": 421.0
+          "x": 48.12,
+          "y": 34.47
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.33,
+          "y": 20.31
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.44,
+          "y": 48.18
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.3,
+          "y": 33.98
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 53.14,
+          "y": 32.51
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.34,
+          "y": 20.26
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.33,
+          "y": 48.02
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 70.07,
+          "y": 33.77
         },
         {
           "id": 99,
           "type": "referee",
           "team_id": null,
-          "x": 501.5,
-          "y": 450.8
+          "x": 50.05,
+          "y": 10.19
+        }
+      ]
+    },
+    {
+      "frame_id": 3,
+      "timestamp": 0.1,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 49.14,
+          "y": 34.5
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.24,
+          "y": 34.5
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.42,
+          "y": 20.31
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.48,
+          "y": 48.1
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.31,
+          "y": 33.91
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 53.15,
+          "y": 32.5
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.33,
+          "y": 20.24
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.26,
+          "y": 47.94
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.99,
+          "y": 33.72
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.1,
+          "y": 10.21
+        }
+      ]
+    },
+    {
+      "frame_id": 4,
+      "timestamp": 0.133,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 49.25,
+          "y": 34.49
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.35,
+          "y": 34.49
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.5,
+          "y": 20.29
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.5,
+          "y": 48.02
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.32,
+          "y": 33.84
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 53.15,
+          "y": 32.46
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.31,
+          "y": 20.21
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.18,
+          "y": 47.86
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.9,
+          "y": 33.68
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.15,
+          "y": 10.23
+        }
+      ]
+    },
+    {
+      "frame_id": 5,
+      "timestamp": 0.167,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 49.35,
+          "y": 34.45
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.45,
+          "y": 34.45
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.56,
+          "y": 20.26
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.51,
+          "y": 47.94
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.32,
+          "y": 33.78
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 53.13,
+          "y": 32.39
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.27,
+          "y": 20.18
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.09,
+          "y": 47.79
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.81,
+          "y": 33.64
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.2,
+          "y": 10.24
+        }
+      ]
+    },
+    {
+      "frame_id": 6,
+      "timestamp": 0.2,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 49.43,
+          "y": 34.39
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.53,
+          "y": 34.39
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.6,
+          "y": 20.23
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.5,
+          "y": 47.85
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.32,
+          "y": 33.72
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 53.1,
+          "y": 32.31
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.21,
+          "y": 20.14
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.98,
+          "y": 47.72
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.72,
+          "y": 33.62
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.24,
+          "y": 10.25
+        }
+      ]
+    },
+    {
+      "frame_id": 7,
+      "timestamp": 0.233,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 49.5,
+          "y": 34.3
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.6,
+          "y": 34.3
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.62,
+          "y": 20.19
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.47,
+          "y": 47.77
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.32,
+          "y": 33.68
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 53.05,
+          "y": 32.21
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.14,
+          "y": 20.1
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.88,
+          "y": 47.65
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.64,
+          "y": 33.6
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.28,
+          "y": 10.26
+        }
+      ]
+    },
+    {
+      "frame_id": 8,
+      "timestamp": 0.267,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 49.55,
+          "y": 34.19
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.65,
+          "y": 34.19
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.62,
+          "y": 20.14
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.44,
+          "y": 47.69
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.31,
+          "y": 33.64
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.98,
+          "y": 32.1
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 60.06,
+          "y": 20.06
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.77,
+          "y": 47.6
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.56,
+          "y": 33.6
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.33,
+          "y": 10.26
+        }
+      ]
+    },
+    {
+      "frame_id": 9,
+      "timestamp": 0.3,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 49.57,
+          "y": 34.07
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.67,
+          "y": 34.07
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.6,
+          "y": 20.09
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.39,
+          "y": 47.62
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.31,
+          "y": 33.61
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.9,
+          "y": 31.99
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.97,
+          "y": 20.03
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.66,
+          "y": 47.55
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.48,
+          "y": 33.61
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.36,
+          "y": 10.27
+        }
+      ]
+    },
+    {
+      "frame_id": 10,
+      "timestamp": 0.333,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 49.58,
+          "y": 33.95
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.68,
+          "y": 33.95
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.57,
+          "y": 20.05
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.34,
+          "y": 47.56
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.31,
+          "y": 33.6
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.8,
+          "y": 31.89
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.86,
+          "y": 20.0
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.55,
+          "y": 47.52
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.41,
+          "y": 33.62
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.4,
+          "y": 10.26
+        }
+      ]
+    },
+    {
+      "frame_id": 11,
+      "timestamp": 0.367,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 49.83,
+          "y": 33.83
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.68,
+          "y": 33.82
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.53,
+          "y": 20.02
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.3,
+          "y": 47.51
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.32,
+          "y": 33.6
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.7,
+          "y": 31.79
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.76,
+          "y": 19.97
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.46,
+          "y": 47.5
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.34,
+          "y": 33.65
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.43,
+          "y": 10.26
+        }
+      ]
+    },
+    {
+      "frame_id": 12,
+      "timestamp": 0.4,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 50.09,
+          "y": 33.71
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.66,
+          "y": 33.71
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.49,
+          "y": 19.99
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.26,
+          "y": 47.48
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.33,
+          "y": 33.61
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.59,
+          "y": 31.72
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.65,
+          "y": 19.96
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.37,
+          "y": 47.49
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.28,
+          "y": 33.68
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.46,
+          "y": 10.26
+        }
+      ]
+    },
+    {
+      "frame_id": 13,
+      "timestamp": 0.433,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 50.34,
+          "y": 33.59
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.64,
+          "y": 33.62
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.44,
+          "y": 19.97
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.22,
+          "y": 47.46
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.34,
+          "y": 33.64
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.48,
+          "y": 31.67
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.54,
+          "y": 19.95
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.29,
+          "y": 47.49
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.23,
+          "y": 33.72
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.49,
+          "y": 10.25
+        }
+      ]
+    },
+    {
+      "frame_id": 14,
+      "timestamp": 0.467,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 50.59,
+          "y": 33.47
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.62,
+          "y": 33.55
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.39,
+          "y": 19.97
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.2,
+          "y": 47.46
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.37,
+          "y": 33.68
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.37,
+          "y": 31.64
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.43,
+          "y": 19.96
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.23,
+          "y": 47.51
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.18,
+          "y": 33.77
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.51,
+          "y": 10.24
+        }
+      ]
+    },
+    {
+      "frame_id": 15,
+      "timestamp": 0.5,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 50.84,
+          "y": 33.36
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.59,
+          "y": 33.51
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.35,
+          "y": 19.98
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.2,
+          "y": 47.47
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.41,
+          "y": 33.72
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.27,
+          "y": 31.64
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.34,
+          "y": 19.98
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.18,
+          "y": 47.53
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.14,
+          "y": 33.83
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.53,
+          "y": 10.23
+        }
+      ]
+    },
+    {
+      "frame_id": 16,
+      "timestamp": 0.533,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 51.09,
+          "y": 33.24
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.58,
+          "y": 33.5
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.32,
+          "y": 20.01
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.21,
+          "y": 47.49
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.45,
+          "y": 33.78
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.17,
+          "y": 31.67
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.25,
+          "y": 20.01
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.15,
+          "y": 47.56
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.11,
+          "y": 33.89
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.54,
+          "y": 10.22
+        }
+      ]
+    },
+    {
+      "frame_id": 17,
+      "timestamp": 0.567,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 51.34,
+          "y": 33.12
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.57,
+          "y": 33.52
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.31,
+          "y": 20.04
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.24,
+          "y": 47.52
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.5,
+          "y": 33.84
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.09,
+          "y": 31.73
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.17,
+          "y": 20.05
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.14,
+          "y": 47.6
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.09,
+          "y": 33.95
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.55,
+          "y": 10.2
+        }
+      ]
+    },
+    {
+      "frame_id": 18,
+      "timestamp": 0.6,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 51.59,
+          "y": 33.0
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.58,
+          "y": 33.57
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.31,
+          "y": 20.1
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.29,
+          "y": 47.56
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.57,
+          "y": 33.91
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.03,
+          "y": 31.81
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.11,
+          "y": 20.11
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.14,
+          "y": 47.64
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.07,
+          "y": 34.01
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.56,
+          "y": 10.19
+        }
+      ]
+    },
+    {
+      "frame_id": 19,
+      "timestamp": 0.633,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 51.84,
+          "y": 32.88
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.61,
+          "y": 33.65
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.32,
+          "y": 20.16
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.36,
+          "y": 47.6
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.64,
+          "y": 33.98
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 51.98,
+          "y": 31.91
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.06,
+          "y": 20.17
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.15,
+          "y": 47.67
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.06,
+          "y": 34.08
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.57,
+          "y": 10.18
+        }
+      ]
+    },
+    {
+      "frame_id": 20,
+      "timestamp": 0.667,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 52.1,
+          "y": 32.77
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.65,
+          "y": 33.75
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.36,
+          "y": 20.24
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.45,
+          "y": 47.65
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.72,
+          "y": 34.05
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 51.95,
+          "y": 32.03
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.03,
+          "y": 20.24
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.18,
+          "y": 47.71
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.06,
+          "y": 34.14
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.57,
+          "y": 10.16
+        }
+      ]
+    },
+    {
+      "frame_id": 21,
+      "timestamp": 0.7,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 52.35,
+          "y": 32.65
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.71,
+          "y": 33.86
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.42,
+          "y": 20.32
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.55,
+          "y": 47.69
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.81,
+          "y": 34.12
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 51.93,
+          "y": 32.16
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.02,
+          "y": 20.32
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.21,
+          "y": 47.75
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.06,
+          "y": 34.2
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.57,
+          "y": 10.15
+        }
+      ]
+    },
+    {
+      "frame_id": 22,
+      "timestamp": 0.733,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 52.6,
+          "y": 32.53
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.79,
+          "y": 33.98
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.49,
+          "y": 20.4
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.66,
+          "y": 47.73
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 28.91,
+          "y": 34.19
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 51.94,
+          "y": 32.29
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.02,
+          "y": 20.4
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.26,
+          "y": 47.78
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.06,
+          "y": 34.25
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.57,
+          "y": 10.14
+        }
+      ]
+    },
+    {
+      "frame_id": 23,
+      "timestamp": 0.767,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 52.85,
+          "y": 32.41
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 48.89,
+          "y": 34.11
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.58,
+          "y": 20.49
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.78,
+          "y": 47.77
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 29.0,
+          "y": 34.25
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 51.95,
+          "y": 32.41
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.03,
+          "y": 20.47
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.31,
+          "y": 47.8
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.07,
+          "y": 34.3
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.56,
+          "y": 10.12
+        }
+      ]
+    },
+    {
+      "frame_id": 24,
+      "timestamp": 0.8,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 52.87,
+          "y": 32.53
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 49.0,
+          "y": 34.23
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.69,
+          "y": 20.57
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.91,
+          "y": 47.79
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 29.11,
+          "y": 34.3
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 51.97,
+          "y": 32.53
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.06,
+          "y": 20.55
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.36,
+          "y": 47.81
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.08,
+          "y": 34.34
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.55,
+          "y": 10.11
+        }
+      ]
+    },
+    {
+      "frame_id": 25,
+      "timestamp": 0.833,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 52.9,
+          "y": 32.62
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 49.12,
+          "y": 34.33
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.8,
+          "y": 20.65
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 39.04,
+          "y": 47.8
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 29.21,
+          "y": 34.34
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.0,
+          "y": 32.62
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.09,
+          "y": 20.63
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.4,
+          "y": 47.81
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.09,
+          "y": 34.37
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.54,
+          "y": 10.11
+        }
+      ]
+    },
+    {
+      "frame_id": 26,
+      "timestamp": 0.867,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 52.93,
+          "y": 32.7
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 49.24,
+          "y": 34.41
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 38.93,
+          "y": 20.72
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 39.16,
+          "y": 47.8
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 29.31,
+          "y": 34.38
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.03,
+          "y": 32.7
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.14,
+          "y": 20.7
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.45,
+          "y": 47.8
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.09,
+          "y": 34.39
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.54,
+          "y": 10.1
+        }
+      ]
+    },
+    {
+      "frame_id": 27,
+      "timestamp": 0.9,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 52.96,
+          "y": 32.75
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 49.36,
+          "y": 34.47
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 39.05,
+          "y": 20.78
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 39.28,
+          "y": 47.78
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 29.42,
+          "y": 34.39
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.06,
+          "y": 32.75
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.19,
+          "y": 20.76
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.48,
+          "y": 47.78
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.1,
+          "y": 34.4
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.53,
+          "y": 10.09
+        }
+      ]
+    },
+    {
+      "frame_id": 28,
+      "timestamp": 0.933,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 52.99,
+          "y": 32.77
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 49.49,
+          "y": 34.5
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 39.18,
+          "y": 20.83
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 39.38,
+          "y": 47.75
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 29.51,
+          "y": 34.4
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.09,
+          "y": 32.77
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.24,
+          "y": 20.81
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.51,
+          "y": 47.74
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.1,
+          "y": 34.4
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.52,
+          "y": 10.09
+        }
+      ]
+    },
+    {
+      "frame_id": 29,
+      "timestamp": 0.967,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 53.0,
+          "y": 32.76
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 49.6,
+          "y": 34.49
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 39.3,
+          "y": 20.86
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 39.47,
+          "y": 47.7
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 29.61,
+          "y": 34.39
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.1,
+          "y": 32.76
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.28,
+          "y": 20.85
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.52,
+          "y": 47.7
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.09,
+          "y": 34.39
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.51,
+          "y": 10.09
+        }
+      ]
+    },
+    {
+      "frame_id": 30,
+      "timestamp": 1.0,
+      "entities": [
+        {
+          "id": 0,
+          "type": "ball",
+          "team_id": null,
+          "x": 53.0,
+          "y": 32.73
+        },
+        {
+          "id": 1,
+          "type": "player",
+          "team_id": 1,
+          "x": 49.7,
+          "y": 34.46
+        },
+        {
+          "id": 2,
+          "type": "player",
+          "team_id": 1,
+          "x": 39.42,
+          "y": 20.88
+        },
+        {
+          "id": 3,
+          "type": "player",
+          "team_id": 1,
+          "x": 39.55,
+          "y": 47.64
+        },
+        {
+          "id": 4,
+          "type": "player",
+          "team_id": 1,
+          "x": 29.69,
+          "y": 34.37
+        },
+        {
+          "id": 5,
+          "type": "player",
+          "team_id": 2,
+          "x": 52.1,
+          "y": 32.73
+        },
+        {
+          "id": 6,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.33,
+          "y": 20.88
+        },
+        {
+          "id": 7,
+          "type": "player",
+          "team_id": 2,
+          "x": 59.52,
+          "y": 47.64
+        },
+        {
+          "id": 8,
+          "type": "player",
+          "team_id": 2,
+          "x": 69.09,
+          "y": 34.37
+        },
+        {
+          "id": 99,
+          "type": "referee",
+          "team_id": null,
+          "x": 50.5,
+          "y": 10.1
         }
       ]
     }
