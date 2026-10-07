@@ -12,10 +12,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 // JsonNode represents a single piece of the JSON document (an object, an array, or a value).
 import com.fasterxml.jackson.databind.JsonNode;
 
+import com.taticanalytics.exception.TrackingDataLoadException;
 import com.taticanalytics.model.FrameData;
 import com.taticanalytics.model.Player;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.model.Referee;
+
+// LIBRARY: SLF4J (Simple Logging Facade for Java)
+// SLF4J is a standard logging API that comes with the Spring Boot starter (backed by Logback).
+// Unlike System.out.println, a logger has LEVELS (debug, info, warn, error) that can be turned
+// on or off through configuration, without changing the code.
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // SPRING BOOT CONCEPT: @Component
 // Like @Service, @Component tells Spring: "Create an instance of this class and manage it."
@@ -25,6 +33,11 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TrackingDataLoader {
+
+    // LOGGING CONCEPT: one logger per class
+    // `LoggerFactory.getLogger(TrackingDataLoader.class)` tags every log line with this class name,
+    // so we can tell where a message came from. It is `static final` because it is shared by all instances.
+    private static final Logger logger = LoggerFactory.getLogger(TrackingDataLoader.class);
 
     // JAVA CONCEPT: final dependency
     // The mapper is instantiated once and reused. ObjectMapper is thread-safe after configuration,
@@ -68,8 +81,11 @@ public class TrackingDataLoader {
 
                     FrameData currentFrame = new FrameData(frameId, timestamp);
 
-                    // Optional: Print progress. (In production, replace with a proper Logger!)
-                    System.out.println("Processing Frame ID " + frameId + " | Time: " + timestamp + "s");
+                    // LOGGING CONCEPT: debug level
+                    // One line per frame is far too noisy for a real match (thousands of frames),
+                    // so it is logged at DEBUG, which is hidden by default. The `{}` placeholders
+                    // are only filled in if DEBUG is actually enabled.
+                    logger.debug("Processing Frame ID {} | Time: {}s", frameId, timestamp);
 
                     JsonNode entitiesNode = frameNode.get("entities");
 
@@ -101,8 +117,8 @@ public class TrackingDataLoader {
                                     currentFrame.addEntity(referee);
                                     break;
                                 default:
-                                    System.out.println(" -> Unknown: " + type);
-                                    break;  
+                                    logger.warn("Ignoring unknown entity type: {}", type);
+                                    break;
                             }
                         }
                     }
@@ -111,8 +127,14 @@ public class TrackingDataLoader {
             }
 
         } catch (IOException e) {
-            // If the file reading fails, print the red error trace to the console
-            e.printStackTrace();
+            // ERROR HANDLING: never swallow an exception.
+            // Returning an empty list here would make "the file failed to load" look exactly like
+            // "the match had no frames", and callers would print a report full of legitimate-looking zeros.
+            // Instead we (1) log the error together with the exception, so the stack trace goes to the log,
+            // and (2) rethrow it as our own unchecked exception, with the file path in the message.
+            // Malformed JSON also ends up here: Jackson's JsonProcessingException is a subclass of IOException.
+            logger.error("Failed to load tracking data from '{}'", filePath, e);
+            throw new TrackingDataLoadException("Failed to load tracking data from: " + filePath, e);
         }
         return frames;
     }

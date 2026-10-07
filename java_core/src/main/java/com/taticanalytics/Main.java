@@ -7,6 +7,9 @@ package com.taticanalytics;
 // 2. Java Standard Library (built-in data structures)
 // 3. Domain Models (the data objects representing our business entities)
 
+// Exception imports
+import com.taticanalytics.exception.TrackingDataLoadException;
+
 // Service imports
 import com.taticanalytics.service.TrackingDataLoader;
 import com.taticanalytics.service.AnalyticsService;
@@ -65,7 +68,25 @@ public class Main {
         // SYNTAX: `List<FrameData>` uses Generics (the `< >`). 
         // It guarantees that this list will ONLY ever contain `FrameData` objects,
         // providing type safety at compile time.
-        List<FrameData> frames = loader.loadData("src/main/resources/tracking_sample.json");
+        //
+        // JAVA CONCEPT: Handling an unchecked exception where it can be handled
+        // `TrackingDataLoadException` is thrown when the file is missing or malformed.
+        // `Main` is the right place to catch it, because it is the one that talks to the user:
+        // instead of dumping a stack trace (the technical details already went to the log),
+        // we print a clear message to the error stream and stop with a non-zero exit code.
+        // By convention, exit code 0 means "success" and any other value means "something failed",
+        // which lets scripts that call this program detect the failure.
+        List<FrameData> frames;
+        try {
+            frames = loader.loadData("src/main/resources/tracking_sample.json");
+        } catch (TrackingDataLoadException e) {
+            System.err.println("Could not load the tracking data. " + e.getMessage());
+            System.err.println("Check that the file exists and contains valid tracking JSON.");
+            System.exit(1);
+            // `System.exit` never returns, but the compiler does not know that. This `return`
+            // tells it that `frames` is always assigned on the code that follows.
+            return;
+        }
 
         System.out.println("Loaded Frames: " + frames.size());
         System.out.println("--------------------------------------------------");
