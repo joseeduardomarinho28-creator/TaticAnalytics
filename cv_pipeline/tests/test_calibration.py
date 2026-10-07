@@ -1,8 +1,8 @@
 import json
 import sys
-from pathlib import Path
 import tempfile
 import unittest
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -22,9 +22,9 @@ from calibration import (
 
 class CalibrationTest(unittest.TestCase):
     def setUp(self):
-        self.metre_points = np.float32([
-            [0, 0], [105, 0], [105, 68], [0, 68], [52.5, 0], [52.5, 68]
-        ])
+        self.metre_points = np.float32(
+            [[0, 0], [105, 0], [105, 68], [0, 68], [52.5, 0], [52.5, 68]]
+        )
         pixel_corners = np.float32([[100, 100], [900, 120], [950, 650], [80, 680]])
         metre_corners = self.metre_points[:4]
         pixel_to_metre = cv2.getPerspectiveTransform(pixel_corners, metre_corners)
@@ -37,12 +37,14 @@ class CalibrationTest(unittest.TestCase):
                 tuple(float(value) for value in pixel),
                 tuple(float(value) for value in metre),
             )
-            for index, (pixel, metre) in enumerate(zip(self.pixel_points, self.metre_points))
+            for index, (pixel, metre) in enumerate(
+                zip(self.pixel_points, self.metre_points, strict=True)
+            )
         ]
 
     def test_calculates_pixel_to_metre_homography(self):
         result = calculate_homography(self.points)
-        for pixel, expected in zip(self.pixel_points, self.metre_points):
+        for pixel, expected in zip(self.pixel_points, self.metre_points, strict=True):
             actual = pixel_to_metre(result.matrix, *pixel)
             np.testing.assert_allclose(actual, expected, atol=0.02)
         self.assertLess(result.rmse_metres, 0.02)
@@ -58,7 +60,13 @@ class CalibrationTest(unittest.TestCase):
         result = calculate_homography(self.points)
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "calibration.json"
-            save_calibration(path, result, frame_source="frame.jpg", frame_index=42, image_size=(1920, 1080))
+            save_calibration(
+                path,
+                result,
+                frame_source="frame.jpg",
+                frame_index=42,
+                image_size=(1920, 1080),
+            )
             payload = json.loads(path.read_text())
             loaded = load_calibration(path)
         self.assertEqual(1, payload["schema_version"])
