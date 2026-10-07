@@ -3,8 +3,6 @@ package com.taticanalytics.io;
 // LIBRARY:
 // Jackson core tools for converting JSON strings into Java objects.
 import com.fasterxml.jackson.databind.ObjectMapper;
-// LEARNING NOTE: TypeReference is specifically used to solve a Java limitation called "Type Erasure".
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -22,6 +20,7 @@ import com.taticanalytics.model.Referee;
 // DTO imports (The "Dumb" objects that just carry data)
 import com.taticanalytics.io.dto.EntityDTO;
 import com.taticanalytics.io.dto.FrameDataDTO;
+import com.taticanalytics.io.dto.TrackingFileDTO;
 
 // LIBRARY: Spring Framework
 // `@Component` tells Spring: "Please create and manage a single instance of this class (a Singleton).
@@ -55,15 +54,33 @@ public class JsonFrameParser {
         return parseJsonString(jsonContent);
     }
 
+    // FIX (TA-106): The tracking file's root is a JSON OBJECT — { "match_info": {...}, "frames": [...] } —
+    // per the v1 data contract (TA-50 / TA-61), not a bare array. We now deserialize into
+    // `TrackingFileDTO` (which mirrors that object shape) and pull `frames` out of it, instead of
+    // trying to read the whole content straight into a `List<FrameDataDTO>`. That old approach only
+    // worked for a root-level array, which the contract explicitly does NOT define — it's what made
+    // every real tracking file (including tracking_sample.json) blow up with a Jackson
+    // MismatchedInputException, turned into an HTTP 500 by GlobalExceptionHandler.
+    //
+    // NOTE: We intentionally do NOT also accept a root-level array as a fallback. The whole point of
+    // having a contract is that there is exactly one accepted shape (see TA-80 for unifying this
+    // with TrackingDataLoader later).
     public List<FrameData> parseJsonString(String jsonContent) throws IOException {
 
-        // SYNTAX / JAVA CONCEPT: Type Erasure & TypeReference
-        // In Java, at runtime, a `List<FrameDataDTO>` forgets what it holds and just becomes a `List`.
-        // If we just told Jackson to return a `List.class`, it wouldn't know what to put inside it,
-        // and would default to returning a List of standard Maps/Dictionaries.
-        // `new TypeReference<List<FrameDataDTO>>() {}` is a clever workaround that forces Java to
-        // remember the exact nested type so Jackson can build the correct DTOs.
-        List<FrameDataDTO> dtos = objectMapper.readValue(jsonContent, new TypeReference<List<FrameDataDTO>>() {});
+        TrackingFileDTO trackingFile = objectMapper.readValue(jsonContent, TrackingFileDTO.class);
+
+        List<FrameDataDTO> dtos = trackingFile.frames();
+
+        // Defensive check: fail loudly with a clear message instead of letting a
+        // NullPointerException surface later (e.g. inside convertToDomain's for-loop) as an opaque,
+        // hard-to-debug 500. A tracking file with no "frames" key (or "frames": null) has nothing to
+        // analyze, which is a data problem worth calling out explicitly.
+        if (dtos == null) {
+            throw new IOException(
+                "Tracking file is missing the required \"frames\" array. " +
+                "Expected root shape: { \"match_info\": {...}, \"frames\": [ ... ] }."
+            );
+        }
 
         // Once Jackson gives us the "dumb" DTOs, we immediately convert them into our "smart" Domain models.
         return convertToDomain(dtos);
