@@ -196,11 +196,11 @@ classDiagram
 
 **Package:** `com.taticanalytics.service`
 
-**Responsibility:** loads tracking data from a file into the domain model by walking the raw JSON tree (`JsonNode`). Used exclusively by the console app.
+**Responsibility:** loads tracking data from a file into the domain model by walking the raw JSON tree (`JsonNode`). Used exclusively by the console app. If the file is missing or malformed, it logs the error (SLF4J) and throws `TrackingDataLoadException` instead of returning an empty list. Per-frame progress is logged at `DEBUG` level, and unknown entity types are logged as warnings.
 
 **Main methods:** `loadData(String filePath)`, `loadSampleData()`.
 
-**Relationships:** produces `List<FrameData>`; consumed by `Main`.
+**Relationships:** produces `List<FrameData>`; consumed by `Main`; throws `TrackingDataLoadException`.
 
 ### `JsonFrameParser`
 
@@ -245,6 +245,14 @@ classDiagram
 **Package:** `com.taticanalytics.exception`
 
 **Responsibility:** intercepts exceptions thrown by any `@RestController` and converts them into standardized JSON error responses (400 for bad parameters/business-rule violations, 500 as a generic catch-all).
+
+### `TrackingDataLoadException`
+
+**Package:** `com.taticanalytics.exception`
+
+**Responsibility:** unchecked exception (`extends RuntimeException`) thrown by `TrackingDataLoader.loadData` when the tracking file is missing or malformed. Carries the file path in its message and the original `IOException` as its cause.
+
+**Relationships:** thrown by `TrackingDataLoader`; caught by `Main`, which prints a friendly message and exits with code `1`. It does not reach the REST API, since the API uses `JsonFrameParser`.
 
 ### `Entity` *(abstract)*
 
@@ -316,7 +324,7 @@ classDiagram
 
 **Package:** `com.taticanalytics` (root)
 
-**Responsibility:** entry point of the console application; orchestrates loading via `TrackingDataLoader` and processing via `AnalyticsService`, printing the results (raw frames, kinematic stats, possession, heatmap).
+**Responsibility:** entry point of the console application; orchestrates loading via `TrackingDataLoader` and processing via `AnalyticsService`, printing the results (raw frames, kinematic stats, possession, heatmap). If the tracking file cannot be loaded, it prints a clear message to `System.err` and exits with code `1` instead of reporting empty results.
 
 ### `Application`
 
@@ -359,7 +367,7 @@ Overloaded variants of `calculatePossessionTimePerTeam`, `calculatePossessionTim
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `loadData(String filePath)` | `List<FrameData>` | Loads tracking data from the given file path into the domain model. |
+| `loadData(String filePath)` | `List<FrameData>` | Loads tracking data from the given file path into the domain model. Throws `TrackingDataLoadException` (unchecked) if the file is missing or malformed. |
 | `loadSampleData()` | `List<FrameData>` | Convenience overload that loads `tracking_sample.json`. |
 
 ### `JsonFrameParser`
@@ -489,6 +497,7 @@ mvn test
 - `AnalyticsServiceTest` — covers the ball-possession state machine (per team and per player), including protection against retroactive attribution, as well as the kinematic calculations (distance/speed).
 - `AnalyticsServiceHeatmapTest` — covers heatmap cell accumulation, frame-gap handling, non-existent players, and default-dimension fallbacks.
 - `JsonFrameParserTest` — covers DTO-based JSON parsing into the domain model.
+- `TrackingDataLoaderTest` — covers the failure paths of `TrackingDataLoader.loadData` (non-existent file and malformed JSON, using `@TempDir`), asserting that `TrackingDataLoadException` is thrown with the file path in the message instead of an empty list being returned.
 
 ---
 
@@ -534,7 +543,6 @@ This section tracks known gaps and risks identified during an internal code revi
 
 ### Independent of the computer-vision pipeline (safe to fix anytime)
 
-- `TrackingDataLoader.loadData` silently swallows `IOException` (`e.printStackTrace()` + returns an empty list). Callers cannot distinguish "an empty match" from "the file failed to load."
 - `GlobalExceptionHandler`'s catch-all handler (`Exception.class`) never logs the underlying exception server-side — an unexpected error in production would leave no trace to debug from.
 - `AnalyticsController` does not validate `rows`, `cols`, or `radius` query parameters. Invalid values (e.g. negative `rows`) fall into the generic 500 handler instead of a proper `400 Bad Request`.
 - `ExportService` is implemented but not wired into either the REST API or the console app (no `@Component`/`@Service` annotation, no caller).
@@ -568,7 +576,8 @@ taticanalytics-core/
     │   │           ├── controller/
     │   │           │   └── AnalyticsController.java
     │   │           ├── exception/
-    │   │           │   └── GlobalExceptionHandler.java
+    │   │           │   ├── GlobalExceptionHandler.java
+    │   │           │   └── TrackingDataLoadException.java
     │   │           ├── io/
     │   │           │   ├── ExportService.java
     │   │           │   ├── JsonFrameParser.java
@@ -598,7 +607,8 @@ taticanalytics-core/
                     │   └── JsonFrameParserTest.java
                     └── service/
                         ├── AnalyticsServiceHeatmapTest.java
-                        └── AnalyticsServiceTest.java
+                        ├── AnalyticsServiceTest.java
+                        └── TrackingDataLoaderTest.java
 ```
 
 ---
