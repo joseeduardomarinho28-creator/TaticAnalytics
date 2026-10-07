@@ -478,6 +478,7 @@ mvn test
 
 - `AnalyticsServiceTest` — covers the ball-possession state machine (per team and per player), including protection against retroactive attribution, as well as the kinematic calculations (distance/speed).
 - `AnalyticsServiceHeatmapTest` — covers heatmap cell accumulation, frame-gap handling, non-existent players, and default-dimension fallbacks.
+- `AnalyticsControllerTest` — covers the REST layer with `@WebMvcTest` and `MockMvc` (service and parser replaced by `@MockBean`): JSON responses for stats, possession (per player/team, with and without `radius`) and heatmap (no parameters, partial parameters with `MatchConstants` fallbacks, all parameters), plus the `400` (invalid `id`) and `500` (sample file cannot be loaded) error responses.
 - `JsonFrameParserTest` — covers DTO-based JSON parsing into the domain model.
 
 ---
@@ -580,6 +581,8 @@ taticanalytics-core/
         └── java/
             └── com/
                 └── taticanalytics/
+                    ├── controller/
+                    │   └── AnalyticsControllerTest.java
                     ├── io/
                     │   └── JsonFrameParserTest.java
                     └── service/
