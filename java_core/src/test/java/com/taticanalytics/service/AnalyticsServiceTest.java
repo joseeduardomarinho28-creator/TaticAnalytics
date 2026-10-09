@@ -6,18 +6,11 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 // Domain model imports
-import com.taticanalytics.model.Entity;
 import com.taticanalytics.model.Player;
 import com.taticanalytics.model.PlayerStats;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.model.Referee;
 import com.taticanalytics.model.FrameData;
-
-// LEARNING NOTE:
-// Notice that `MatchConstants` is imported here, but it is actually never used in the code below.
-// In Java, unused imports don't break the code, but they are considered "code smell". 
-// Most IDEs will highlight this in gray or yellow.
-import com.taticanalytics.util.MatchConstants;
 
 // Java standard collections
 import java.util.ArrayList;
