@@ -539,7 +539,6 @@ This section tracks known gaps and risks identified during an internal code revi
 - `AnalyticsController` does not validate `rows`, `cols`, or `radius` query parameters. Invalid values (e.g. negative `rows`) fall into the generic 500 handler instead of a proper `400 Bad Request`.
 - `ExportService` is implemented but not wired into either the REST API or the console app (no `@Component`/`@Service` annotation, no caller).
 - File paths (`"src/main/resources/tracking_sample.json"`, hardcoded in `Main` and in both loaders' `loadSampleData()`) are relative to the working directory. This breaks once the app is packaged and run as a standalone `.jar` from a different directory; loading via classpath (`getResourceAsStream`) would be more robust.
-- Minor cosmetic cleanup: duplicate import in `JsonFrameParserTest`, unused `MatchConstants` import in `AnalyticsServiceTest`.
 
 ### Dependent on the computer-vision pipeline (revisit after integration)
 
