@@ -10,13 +10,21 @@ package com.taticanalytics;
 // Service imports
 import com.taticanalytics.service.TrackingDataLoader;
 import com.taticanalytics.service.AnalyticsService;
+import com.taticanalytics.io.ExportService;
+
+// Java standard library: input/output errors
+import java.io.IOException;
 
 // Java standard collections
 // LEARNING NOTE:
 // `List` is an interface representing an ordered collection (like Python's `list`).
 // `Map` is an interface representing key-value pairs (like Python's `dict`).
+// `TreeMap` is a Map that keeps its keys sorted; `LinkedHashMap` keeps insertion order.
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 // Domain model imports
 import com.taticanalytics.model.FrameData;
@@ -50,6 +58,7 @@ public class Main {
         // 2. Load the data from the JSON file.
         // 3. Process and print raw data.
         // 4. Calculate and print player stats, possession, and heatmaps.
+        // 5. (Optional) Export the stats of every player to a CSV file, if a path was given.
 
         // OOP CONCEPT: Object Creation and Delegation
         // We use the `new` keyword to call the constructors of our service classes.
@@ -174,5 +183,81 @@ public class Main {
             // After finishing a row, we print an empty newline to move down for the next row.
             System.out.println();
         }
+
+        // 7. OPTIONAL CSV EXPORT (TA-69)
+        // JAVA CONCEPT: Command-line arguments
+        // `args` holds whatever the user typed after the program name, e.g. `... Main output/players.csv`
+        // puts "output/players.csv" in `args[0]`. If nothing was typed, `args.length` is 0 and the
+        // program behaves exactly as before (it only prints to the console).
+        //
+        // DESIGN NOTE: why the path comes from the user and not from the code
+        // A path written inside the code (like "output/players.csv") only works for whoever has that
+        // folder layout, and it forces everyone to produce files even when they don't want them.
+        if (args.length > 0) {
+            String outputPath = args[0];
+            List<Map<String, Object>> statsRows = buildPlayerStatsRows(frames, analyticsService);
+
+            // `Main` runs outside Spring, so we create the service by hand (Spring is not available here).
+            ExportService exportService = new ExportService();
+
+            // JAVA CONCEPT: Handling a checked exception where it can be handled
+            // `exportPlayerStatsToCsv` declares `throws IOException` (disk full, no permission, ...).
+            // `Main` is the one that talks to the user, so it catches it, prints a clear message to the
+            // error stream and stops with a non-zero exit code (0 means success, anything else means failure).
+            try {
+                exportService.exportPlayerStatsToCsv(statsRows, outputPath);
+                System.out.println("--------------------------------------------------");
+                System.out.println("Exported the stats of " + statsRows.size() + " players to: " + outputPath);
+            } catch (IOException e) {
+                System.err.println("Could not export the player stats to '" + outputPath + "'. " + e.getMessage());
+                System.exit(1);
+            }
+        }
+    }
+
+    // PURPOSE:
+    // Builds the rows that `ExportService.exportPlayerStatsToCsv` expects: one Map per player with
+    // the keys "playerId", "teamId", "totalDistance" and "maxSpeed".
+    //
+    // NOTE (TA-74): finding the distinct entities of a match will become a proper method of
+    // `AnalyticsService` (the "list players" endpoint). When it exists, the discovery loop below
+    // can be replaced by it.
+    //
+    // JAVA CONCEPT: `private static` helper
+    // `private` keeps it internal to `Main`; `static` lets `main` (which is static) call it directly.
+    private static List<Map<String, Object>> buildPlayerStatsRows(List<FrameData> frames, AnalyticsService analyticsService) {
+
+        // 1. Discover the distinct players and the team of each one.
+        // LEARNING NOTE: `TreeMap` keeps its keys sorted, so the CSV always lists players by ascending id.
+        // `putIfAbsent` stores the team the FIRST time we see a player and ignores later frames.
+        // Only `Player` entities count: the ball and the referees are not players (TA-107 rule: type matters).
+        Map<Integer, Integer> teamByPlayerId = new TreeMap<>();
+        for (FrameData frame : frames) {
+            for (Entity entity : frame.getEntities()) {
+                if (entity instanceof Player player) {
+                    teamByPlayerId.putIfAbsent(player.getId(), player.getTeamId());
+                }
+            }
+        }
+
+        // 2. Calculate the stats of each player and store them as one row.
+        // `LinkedHashMap` keeps the keys in the order we inserted them (id, team, distance, speed).
+        //
+        // CSV GOTCHA: the numbers go into the map as raw `Double`/`Integer` objects, NOT as formatted
+        // text. If we used `String.format("%.2f", ...)` it would use the computer's language settings,
+        // and on a Portuguese system it would write "12,35" (comma), which would break the CSV columns.
+        // `ExportService` writes a `Double` with a dot, no matter the language of the computer.
+        List<Map<String, Object>> rows = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> entry : teamByPlayerId.entrySet()) {
+            PlayerStats stats = analyticsService.calculatePlayerStats(frames, entry.getKey());
+
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("playerId", entry.getKey());
+            row.put("teamId", entry.getValue());
+            row.put("totalDistance", stats.getTotalDistance());
+            row.put("maxSpeed", stats.getMaxSpeed());
+            rows.add(row);
+        }
+        return rows;
     }
 }

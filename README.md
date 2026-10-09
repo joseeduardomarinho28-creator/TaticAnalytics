@@ -63,7 +63,7 @@ Its internal design separates domain modeling, data loading/parsing, and analyti
 - A **Spring Boot REST API** (`AnalyticsController`) exposing player stats, possession (per player/team), and heatmap endpoints.
 - **Global exception handling** (`GlobalExceptionHandler`) returning standardized JSON error responses instead of raw stack traces.
 - **CORS configuration** (`WebConfig`) allowing cross-origin requests to the API.
-- An **export service** (`ExportService`) able to write results to JSON and CSV files — implemented but not yet wired into the API or the console app.
+- An **export service** (`ExportService`, a Spring `@Service`) able to write results to JSON and CSV files. The console app uses it to export the stats of every player to CSV when an output path is passed as an argument (see [Running the Project](#running-the-project)); it is not exposed through the REST API yet.
 
 ### 📋 Planned
 
@@ -222,7 +222,7 @@ classDiagram
 
 **Package:** `com.taticanalytics.io`
 
-**Responsibility:** exports arbitrary data (stats, heatmaps) to JSON and CSV files on disk. Not currently a Spring bean and not called from anywhere — implemented ahead of the API/CLI wiring that will use it.
+**Responsibility:** exports arbitrary data (stats, heatmaps) to JSON and CSV files on disk. It is a Spring bean (`@Service`) and is used by `Main`, which builds one row per player (`playerId`, `teamId`, `totalDistance`, `maxSpeed`) and calls `exportPlayerStatsToCsv`. The output path is always a parameter, never a constant inside the class, and missing parent folders are created automatically. It is not called from the REST API yet.
 
 **Main methods:** `exportToJson(T data, String filePath)`, `exportPlayerStatsToCsv(...)`, `exportHeatmapToCsv(...)`.
 
@@ -316,7 +316,7 @@ classDiagram
 
 **Package:** `com.taticanalytics` (root)
 
-**Responsibility:** entry point of the console application; orchestrates loading via `TrackingDataLoader` and processing via `AnalyticsService`, printing the results (raw frames, kinematic stats, possession, heatmap).
+**Responsibility:** entry point of the console application; orchestrates loading via `TrackingDataLoader` and processing via `AnalyticsService`, printing the results (raw frames, kinematic stats, possession, heatmap). If an output path is passed as the first command-line argument, it also exports the stats of every player to that CSV file through `ExportService`; without arguments it only prints to the console.
 
 ### `Application`
 
@@ -470,6 +470,24 @@ mvn clean compile exec:java -Dexec.mainClass="com.taticanalytics.Main"
 
 `Main` loads the sample tracking data via `TrackingDataLoader` and runs the analytics via `AnalyticsService`, printing the results to the console.
 
+**Export the stats of all players to CSV:**
+
+Pass the output path as the first argument. The folder is created if it does not exist.
+
+```bash
+mvn clean compile exec:java -Dexec.mainClass="com.taticanalytics.Main" -Dexec.args="output/players.csv"
+```
+
+The file has one line per player, ordered by id, with decimal numbers written with a dot regardless of the computer's language settings:
+
+```csv
+playerId,teamId,totalDistance,maxSpeed
+1,1,3.16539209179255,4.93297593821196
+2,1,2.390072848187561,4.342595017715772
+```
+
+Distance is in meters and max speed in m/s. If the file cannot be written, `Main` prints a clear message to the error stream and exits with code `1`. The `java_core/output/` folder is ignored by Git.
+
 **Run the REST API:**
 
 ```bash
@@ -489,6 +507,7 @@ mvn test
 - `AnalyticsServiceTest` — covers the ball-possession state machine (per team and per player), including protection against retroactive attribution, as well as the kinematic calculations (distance/speed).
 - `AnalyticsServiceHeatmapTest` — covers heatmap cell accumulation, frame-gap handling, non-existent players, and default-dimension fallbacks.
 - `JsonFrameParserTest` — covers DTO-based JSON parsing into the domain model.
+- `ExportServiceTest` — covers `ExportService` being picked up by Spring as a bean and the CSV output (header, rows, decimal dot, header-only file for an empty list, creation of missing parent folders, heatmap grid), all written to a temporary folder (`@TempDir`).
 
 ---
 
@@ -537,7 +556,7 @@ This section tracks known gaps and risks identified during an internal code revi
 - `TrackingDataLoader.loadData` silently swallows `IOException` (`e.printStackTrace()` + returns an empty list). Callers cannot distinguish "an empty match" from "the file failed to load."
 - `GlobalExceptionHandler`'s catch-all handler (`Exception.class`) never logs the underlying exception server-side — an unexpected error in production would leave no trace to debug from.
 - `AnalyticsController` does not validate `rows`, `cols`, or `radius` query parameters. Invalid values (e.g. negative `rows`) fall into the generic 500 handler instead of a proper `400 Bad Request`.
-- `ExportService` is implemented but not wired into either the REST API or the console app (no `@Component`/`@Service` annotation, no caller).
+- `ExportService` is wired into the console app only. Exposing it through the REST API (a download endpoint) would require it to write to a stream instead of a file path, and a way to list the players of the match (see the roadmap).
 - File paths (`"src/main/resources/tracking_sample.json"`, hardcoded in `Main` and in both loaders' `loadSampleData()`) are relative to the working directory. This breaks once the app is packaged and run as a standalone `.jar` from a different directory; loading via classpath (`getResourceAsStream`) would be more robust.
 - Minor cosmetic cleanup: duplicate import in `JsonFrameParserTest`, unused `MatchConstants` import in `AnalyticsServiceTest`.
 
@@ -595,6 +614,7 @@ taticanalytics-core/
             └── com/
                 └── taticanalytics/
                     ├── io/
+                    │   ├── ExportServiceTest.java
                     │   └── JsonFrameParserTest.java
                     └── service/
                         ├── AnalyticsServiceHeatmapTest.java
@@ -662,11 +682,12 @@ mvn test
 - [x] Spring Boot REST API exposing the analytics engine.
 - [x] Global exception handling with standardized JSON error responses.
 - [x] CORS configuration for cross-origin API access.
+- [x] Export of the stats of all players to CSV from the console app (`ExportService` as a Spring bean).
 
 ### 📋 Planned
 
 - [ ] `GameStatus` filter (ball out of play / half-time).
-- [ ] Wire `ExportService` into the API and/or console app (report export in CSV/JSON).
+- [ ] Expose `ExportService` through the REST API (download endpoint with `Content-Disposition`), after the "list players" endpoint exists.
 - [ ] Unify `TrackingDataLoader` and `JsonFrameParser` into a single loader, once the computer-vision pipeline's data contract is defined.
 - [ ] Allow the REST API to process real match/tracking data instead of only the fixed sample file.
 - [ ] Add request-parameter validation (`rows`, `cols`, `radius`) with proper `400` responses.
