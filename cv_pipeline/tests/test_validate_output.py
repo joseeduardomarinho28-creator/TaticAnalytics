@@ -44,6 +44,28 @@ class ValidateOutputTest(unittest.TestCase):
         report = validate_payload(payload)
         self.assertIn(code, {issue.code for issue in report.errors}, report.format())
 
+    def test_repository_tracking_samples_are_identical_and_valid(self):
+        """Keep the Java sample synchronized with the CV-to-Java v1 contract."""
+        repository_root = Path(__file__).parents[2]
+        root_sample = repository_root / "tracking_sample.json"
+        java_sample = (
+            repository_root
+            / "java_core"
+            / "src"
+            / "main"
+            / "resources"
+            / "tracking_sample.json"
+        )
+
+        self.assertEqual(
+            root_sample.read_bytes(),
+            java_sample.read_bytes(),
+            "The root and Java resource tracking samples must remain identical",
+        )
+
+        report = validate_file(root_sample)
+        self.assertTrue(report.is_valid, report.format())
+
     def test_accepts_valid_contract_and_warns_about_empty_frame(self):
         report = validate_payload(valid_payload())
         self.assertTrue(report.is_valid, report.format())
