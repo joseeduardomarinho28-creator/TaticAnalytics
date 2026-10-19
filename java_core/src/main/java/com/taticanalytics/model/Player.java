@@ -45,11 +45,14 @@ public class Player extends Entity {
 
     // OOP CONCEPT: Setter method
     // This allows the outside world to change the player's team after the object is created.
-    // 
-    // LEARNING NOTE: A more idiomatic Java naming convention would be `setTeamId` 
-    // to perfectly match the `teamId` field, but `setTeam` is perfectly valid 
-    // and works exactly the same way.
-    public void setTeam(int teamId) {
+    //
+    // LEARNING NOTE: JavaBean naming convention
+    // The field is `teamId`, the getter is `getTeamId()`, so the setter is `setTeamId(...)`:
+    // the three names share the same "property name". Libraries such as Jackson (which turns
+    // objects into JSON) and Spring rely on this convention to discover the property `teamId`
+    // from the method names. A setter called `setTeam` would be seen as a different property
+    // (`team`), which can cause surprises when `Player` is serialized in the future.
+    public void setTeamId(int teamId) {
         this.teamId = teamId;
     }
     
