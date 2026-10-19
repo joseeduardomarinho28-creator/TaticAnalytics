@@ -23,11 +23,23 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.List;
 
+// SPRING BOOT CONCEPT: @Service
+// `@Service` tells Spring: "Create an instance of this class and manage it as a bean."
+// Until TA-69 this class had no annotation, so Spring never created it and nothing used it
+// (it was dead code). With the annotation it can now be injected into any other Spring bean.
+// The console app (`Main`) runs WITHOUT Spring, so it simply calls `new ExportService()`:
+// the annotation does not get in the way of plain Java usage.
+import org.springframework.stereotype.Service;
+
 // PURPOSE:
 // This class is responsible for exporting calculated data to physical files (JSON and CSV).
 // OOP CONCEPT: Single Responsibility Principle (SRP).
-// By keeping this logic here, our AnalyticsService doesn't need to know *how* to save files. 
+// By keeping this logic here, our AnalyticsService doesn't need to know *how* to save files.
 // It just calculates, and this ExportService just saves.
+//
+// DESIGN NOTE: the output path is always a PARAMETER, never a constant inside this class.
+// The caller decides where the file goes (today: the command-line argument of `Main`).
+@Service
 public class ExportService {
     
     // SYNTAX: `private final`
