@@ -52,3 +52,7 @@ build/
 *.pt
 *.onnx
 .ipynb_checkpoints/
+
+# Generated CV contract files are local artifacts, never source files.
+cv_pipeline/output/*
+!cv_pipeline/output/.gitkeep

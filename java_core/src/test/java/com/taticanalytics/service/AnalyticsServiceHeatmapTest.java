@@ -21,9 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 // Domain model imports
 // These are the classes we built in our own project representing the business logic.
+import com.taticanalytics.model.Ball;
 import com.taticanalytics.model.FrameData;
 import com.taticanalytics.model.HeatmapGrid;
 import com.taticanalytics.model.Player;
+import com.taticanalytics.model.Referee;
 
 // Utility import
 import com.taticanalytics.util.MatchConstants;
@@ -173,5 +175,55 @@ public class AnalyticsServiceHeatmapTest {
         // defined in our `MatchConstants` file for its dimensions.
         assertEquals(MatchConstants.DEFAULT_GRID_ROWS, heatmap.getRows());
         assertEquals(MatchConstants.DEFAULT_GRID_COLS, heatmap.getCols());
+    }
+
+    @Test
+    public void shouldIgnoreRefereeWithSamePlayerIdWhenGeneratingHeatmap() {
+        // PURPOSE: Regression test for TA-107 (matching an entity by id only, ignoring its type).
+        // Player 5 and Referee 5 share the same id but stand in completely different places.
+        List<FrameData> frames = new ArrayList<>();
+
+        // Player 5 stays at (15, 15) -> cell [1][1]. Referee 5 stays at (85, 85) -> cell [8][8].
+        FrameData frame1 = new FrameData(1, 0.0);
+        frame1.addEntity(new Player(5, 15.0, 15.0, 10));
+        frame1.addEntity(new Referee(5, 85.0, 85.0));
+        frames.add(frame1);
+
+        FrameData frame2 = new FrameData(2, 1.0);
+        frame2.addEntity(new Player(5, 15.0, 15.0, 10));
+        frame2.addEntity(new Referee(5, 85.0, 85.0));
+        frames.add(frame2);
+
+        AnalyticsService service = new AnalyticsService();
+        HeatmapGrid heatmap = service.generatePlayerHeatmap(frames, 5, 10, 10, 100.0, 100.0);
+        double[][] grid = heatmap.getGrid();
+
+        // ASSERT: The 1.0s belongs to the PLAYER's cell, and nothing leaks into the referee's cell.
+        // LEARNING NOTE: Before the fix, `previousEntity` ended frame 1 pointing at the referee,
+        // so in frame 2 the time was credited to the referee's cell [8][8] instead.
+        assertEquals(1.0, grid[1][1], 0.001);
+        assertEquals(0.0, grid[8][8], 0.001);
+    }
+
+    @Test
+    public void shouldReturnEmptyHeatmapWhenRequestedIdBelongsToBall() {
+        // PURPOSE: Documents the decision taken in TA-107: an id that does not belong to a
+        // `Player` (here, the ball, always id 0) behaves like a non-existent player: empty grid.
+        List<FrameData> frames = new ArrayList<>();
+
+        FrameData frame1 = new FrameData(1, 0.0);
+        frame1.addEntity(new Ball(0, 15.0, 15.0));
+        frames.add(frame1);
+
+        FrameData frame2 = new FrameData(2, 1.0);
+        frame2.addEntity(new Ball(0, 15.0, 15.0));
+        frames.add(frame2);
+
+        AnalyticsService service = new AnalyticsService();
+        HeatmapGrid heatmap = service.generatePlayerHeatmap(frames, 0, 10, 10, 100.0, 100.0);
+        double[][] grid = heatmap.getGrid();
+
+        // ASSERT: Asking for "player 0" must NOT return the ball's heatmap.
+        assertEquals(0.0, grid[1][1], 0.001);
     }
 }

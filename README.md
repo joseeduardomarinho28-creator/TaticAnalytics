@@ -377,10 +377,12 @@ Base path: `/api/v1/analytics`. All endpoints currently operate on the sample da
 
 | Method | Path | Query Params | Description |
 | --- | --- | --- | --- |
-| `GET` | `/player/{id}/stats` | — | Returns `PlayerStats` (distance, max speed) for the given entity `id`. |
+| `GET` | `/player/{id}/stats` | — | Returns `PlayerStats` (distance, max speed) for the given player `id`. |
 | `GET` | `/possession/players` | `radius` *(optional)* | Returns possession time per player (`Map<Integer, Double>`). Falls back to `MatchConstants.BALL_CONTROL_RADIUS` if `radius` is omitted. |
 | `GET` | `/possession/teams` | `radius` *(optional)* | Returns possession time per team (`Map<Integer, Double>`). Same fallback behavior. |
-| `GET` | `/player/{id}/heatmap` | `rows`, `cols`, `fieldWidth`, `fieldHeight` *(all optional)* | Returns a `HeatmapGrid` for the given entity `id`. Falls back to `MatchConstants` defaults for any omitted parameter. |
+| `GET` | `/player/{id}/heatmap` | `rows`, `cols`, `fieldWidth`, `fieldHeight` *(all optional)* | Returns a `HeatmapGrid` for the given player `id`. Falls back to `MatchConstants` defaults for any omitted parameter. |
+
+**Player ids only (TA-107).** The `{id}` in `/player/{id}/stats` and `/player/{id}/heatmap` always refers to a `Player`. The ball (always id `0`) and the referee also have ids, but they are never matched: asking for their id behaves exactly like asking for a player that does not exist, returning a zero-valued result (`PlayerStats` with `0.0`, or an empty heatmap) with `200 OK` instead of a `404`. A `404` for unknown ids may be reconsidered once the endpoint that lists the match's players (TA-74) and the parameter validation (TA-68) are in place.
 
 Errors are returned as standardized JSON via `GlobalExceptionHandler`:
 
@@ -396,6 +398,14 @@ CORS is open to all origins (`WebConfig`), so any front-end can call this API du
 The project includes a sample tracking dataset at `src/main/resources/tracking_sample.json`, which is loaded through either `TrackingDataLoader` (console) or `JsonFrameParser` (REST API).
 
 The exact structure of the tracking file (field names, entity typing, etc.) is defined by this dataset and by the loader/DTO implementations. Refer to `tracking_sample.json`, `EntityDTO`, and `FrameDataDTO` directly for the authoritative format.
+
+### Coordinate units (TA-43)
+
+`x`/`y` on every entity are **meters** on the pitch (0–105 for `x`, 0–68 for `y`, matching `MatchConstants.FIELD_LENGTH`/`FIELD_WIDTH`), never pixels. An earlier version of `tracking_sample.json` had them in pixel space (e.g. the ball sitting at `x:960.5, y:540.0`, exactly the center of a 1920×1080 frame), which silently broke `HeatmapGrid` — coordinates that large mapped to grid cells far outside its bounds, so the boundary check in `HeatmapGrid.addTime` discarded every update without ever throwing, and the heatmap came back essentially empty. Distance and speed were wrong in the same way, just less visibly (large numbers instead of an obviously-empty result).
+
+`match_info.resolution` (e.g. `{"width": 1920, "height": 1080}`) is kept as legitimate metadata about the **source video** the tracking data was extracted from — it has no relationship to the `x`/`y` scale and is not read by any calculation. Don't use it to infer units.
+
+The sample was also regenerated with 30 frames and 8 players (4 per team, plus the ball and the referee) instead of 2 frames and 3 entities, with a short possession change from one player to another, so it's actually enough to exercise possession switching, a heatmap that spans more than one cell, and a ranking across several players — not just confirm that parsing doesn't crash. Frame-to-frame displacements were kept physically plausible for 30 fps footage (a few m/s of jogging for most players, a single faster stretch of a few m/s more for a firm pass).
 
 ---
 
@@ -508,6 +518,10 @@ Instead of crediting each time interval to whoever is closest to the ball *in th
 ### Heatmap
 
 The pitch is divided into a `rows × cols` grid. For each pair of consecutive frames in which the target entity appears, the elapsed time (`Δt`) is credited to the grid cell the entity occupied *during* that interval (i.e. its position in the earlier of the two frames), based on its `(x, y)` coordinates and the configured field dimensions.
+
+### Entity matching (TA-107)
+
+`calculatePlayerStats` and `generatePlayerHeatmap` find the requested entity with `entity instanceof Player player && player.getId() == entityId`, that is, by **type and id**, never by id alone. Ids are only unique among entities of the same type: a tracker can give a player the same id used by a referee (both in the same frames), and matching by id alone would make the algorithm jump between them and accumulate fake distance (impossible speeds) with no error. The ball and the referee are therefore never returned as if they were a player.
 
 ### Frame continuity rule
 

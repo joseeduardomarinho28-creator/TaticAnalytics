@@ -233,6 +233,90 @@ O último comando não deve listar `.venv`, vídeos, pesos (`.pt`) nem arquivos 
 `output/`. Apenas `output/.gitkeep` permanece no repositório para preservar a
 pasta vazia.
 
+## Exportação e validação do JSON (TA-61 e TA-62)
+
+`src/exporter.py` is the contract boundary between the Python pipeline and the
+Java core. It accepts one observation list for every decoded video frame and
+generates the frame ids and timestamps itself. Call `add_frame` even when there
+are no detections; pass `calibration_reliable=False` when that frame cannot be
+converted safely to metres.
+
+```python
+from exporter import EntityObservation, TrackingJsonExporter
+
+exporter = TrackingJsonExporter(
+    video_name="trecho_mvp.mp4",
+    frame_rate=30,
+    resolution=(1920, 1080),
+    expected_total_frames=900,
+)
+
+exporter.add_frame(
+    [
+        EntityObservation(0, "ball", None, 38.2, 30.5),
+        EntityObservation(7, "player", 1, 30.2, 12.8),
+        EntityObservation(3, "referee", None, 48.0, 40.1),
+    ]
+)
+exporter.add_frame([])
+summary = exporter.write("output/tracking.json")
+print(summary.format())
+```
+
+Input positions must already be calibrated in field metres. The exporter:
+
+- creates consecutive frame ids from 1 and timestamps rounded to 3 decimals;
+- optionally verifies the final count against `expected_total_frames`, catching
+  accidental frame sampling before writing;
+- emits `entities: []` for empty or unreliably calibrated frames;
+- converts every ball id to `0` and referee tracker ids to `1000 + tracker_id`;
+- optionally converts zero-based team classes with `team_ids_zero_based=True`;
+- rounds positions to 2 decimals, clamps deviations up to 2 metres to the
+  105 × 68 metre field, and discards entities farther outside it;
+- rejects duplicate ids, multiple balls, invalid teams, unknown types and
+  unexpected input fields;
+- validates the complete payload before replacing the output atomically.
+
+For a command-line integration, prepare an intermediate observation JSON with
+exactly `video_name`, `frame_rate`, `resolution` and `frames`. Each frame accepts
+`entities` and optional `calibration_reliable`; each observation has
+`tracker_id`, `type`, `team_id`, `x` and `y`:
+
+```bash
+python src/exporter.py \
+  --input observations.json \
+  --output output/tracking.json \
+  --team-ids-zero-based
+```
+
+The output filename is always supplied by the caller. The final summary reports
+total and empty frames, clamped coordinates, discarded entities, unique ids and
+file size.
+
+### Validate before Java consumes the file
+
+Run the independent contract validator on every generated file:
+
+```bash
+python src/validate_output.py output/tracking.json
+```
+
+It checks the exact schema, time sequence, ids, teams, field bounds, coordinate
+precision, maximum player and ball counts, physically implausible movement,
+repeated positions and empty-frame percentage. Errors produce exit code `1`;
+warnings are reported but keep exit code `0`, making the command suitable for
+automation.
+
+### Measured file size
+
+A representative synthetic MVP export with 900 frames and 24 entities per
+frame (22 players, one ball and one referee) produced **2,997,666 bytes**, about
+**2.86 MiB**, using the readable indented JSON format. The exact size of a real
+clip will vary with missed detections and numeric values, but remains in the
+expected few-megabyte range. Full matches may require a future contract change;
+do not change the v1 root shape or fields without coordinating with the Java
+side.
+
 ## Solução de problemas
 
 - **`Video not found`**: confira o caminho e mantenha aspas quando houver

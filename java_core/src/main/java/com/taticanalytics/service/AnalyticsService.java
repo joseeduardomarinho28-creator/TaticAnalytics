@@ -50,7 +50,16 @@ public class AnalyticsService {
             for (Entity entity : frame.getEntities()) {
                 
                 // If this is the player we are looking for...
-                if (entityId == entity.getId()) {
+                //
+                // LOGIC CONCEPT: Match by TYPE and id, not by id alone (TA-107)
+                // `Player`, `Referee` and `Ball` are all `Entity` objects, and each one has an `id`.
+                // But ids are only unique among entities of the SAME type: the ball is always 0,
+                // and a tracker can easily give a player an id that a referee also uses (e.g., 5).
+                // If we compared only the ids, a request for "player 5" could also pick up the
+                // referee, and `previousEntity` would jump between the two, adding fake "teleport"
+                // distances (impossible speeds) without any error.
+                // `entity instanceof Player player` checks the type AND gives us a `Player` variable.
+                if (entity instanceof Player player && player.getId() == entityId) {
 
                     // LOGIC CONCEPT: Frame Continuity Check
                     // Why `frame.getFrameId() - previousFrameId == 1`?
@@ -208,7 +217,8 @@ public class AnalyticsService {
 
         for (FrameData frame : frames) {
             for (Entity entity : frame.getEntities()) {
-                if (entityId == entity.getId()) {
+                // Same rule as in `calculatePlayerStats`: only a `Player` can match (TA-107).
+                if (entity instanceof Player player && player.getId() == entityId) {
                     
                      if ((previousEntity != null) && (frame.getFrameId() - previousFrameId == 1)) {
                         double deltaTime = frame.getTimestamp() - previousTimestamp;
