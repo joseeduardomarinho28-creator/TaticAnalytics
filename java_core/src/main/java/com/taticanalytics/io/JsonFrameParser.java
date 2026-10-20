@@ -6,9 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 // Domain model imports (The "Smart" objects with behavior)
 import com.taticanalytics.model.FrameData;
@@ -27,6 +28,11 @@ import com.taticanalytics.io.dto.TrackingFileDTO;
 // Whenever another class needs a JsonFrameParser, inject this instance automatically."
 import org.springframework.stereotype.Component;
 
+// LIBRARY: Spring Framework (TA-70)
+// `ClassPathResource` is Spring's way of pointing at a file that lives on the classpath
+// (for example inside `src/main/resources`, or inside the packaged .jar).
+import org.springframework.core.io.ClassPathResource;
+
 // PURPOSE:
 // This class acts as the bridge between the raw JSON file and the core Application Domain.
 // It performs two distinct steps:
@@ -34,6 +40,10 @@ import org.springframework.stereotype.Component;
 // 2. Mapping: DTOs -> Domain Models (using custom Java logic)
 @Component
 public class JsonFrameParser {
+
+    // CLASSPATH CONCEPT (TA-70): the name of the bundled sample, RELATIVE TO `src/main/resources`.
+    // Maven copies that folder to the root of the classpath, so there is no "src/main/resources/" prefix.
+    private static final String SAMPLE_RESOURCE = "tracking_sample.json";
 
     // The Jackson engine that does the heavy lifting of reading JSON.
 
@@ -47,11 +57,39 @@ public class JsonFrameParser {
     // Convenience method used by the controller layer. It reads the sample tracking
     // file straight from the classpath and hands it off to `parseJsonString`, so
     // callers don't need to deal with file paths themselves.
-    // LEARNING NOTE: `Files.readString(Paths.get(...))` is the modern (Java 11+) way
-    // to read a whole text file into a single String in one line.
+    // TA-70: it used to read the relative path "src/main/resources/tracking_sample.json", which only
+    // worked when the process was started from the module root. Now it goes through the classpath,
+    // so it also works when the app is packaged as a .jar and run from any directory.
     public List<FrameData> loadSampleData() throws IOException {
-        String jsonContent = Files.readString(Paths.get("src/main/resources/tracking_sample.json"));
-        return parseJsonString(jsonContent);
+        return loadFromClasspath(SAMPLE_RESOURCE);
+    }
+
+    // PURPOSE (TA-70):
+    // Reads a resource that is bundled inside the application and parses it.
+    //
+    // SPRING CONCEPT: `ClassPathResource`
+    // This class is a Spring bean, so the idiomatic way to reach a bundled file is Spring's
+    // `ClassPathResource` (the plain-Java equivalent is `getClassLoader().getResourceAsStream(...)`,
+    // used by `TrackingDataLoader`, which also runs outside Spring).
+    //
+    // We check `exists()` first so that a wrong name fails with a message that says exactly what is
+    // missing. It is a `FileNotFoundException` (a subclass of `IOException`), so callers and the
+    // `GlobalExceptionHandler` keep dealing with the same exception type as before.
+    //
+    // LEARNING NOTE: reading with `readAllBytes()` + `StandardCharsets.UTF_8` is the stream version of
+    // `Files.readString(...)`, which also decoded the file as UTF-8. The try-with-resources block
+    // closes the stream automatically, even if reading fails.
+    public List<FrameData> loadFromClasspath(String resourceName) throws IOException {
+        ClassPathResource resource = new ClassPathResource(resourceName);
+
+        if (!resource.exists()) {
+            throw new FileNotFoundException("Tracking resource not found on the classpath: " + resourceName);
+        }
+
+        try (InputStream inputStream = resource.getInputStream()) {
+            String jsonContent = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            return parseJsonString(jsonContent);
+        }
     }
 
     // FIX (TA-106): The tracking file's root is a JSON OBJECT — { "match_info": {...}, "frames": [...] } —

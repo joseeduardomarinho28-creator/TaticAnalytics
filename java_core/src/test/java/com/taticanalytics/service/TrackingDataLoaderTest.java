@@ -6,6 +6,7 @@ package com.taticanalytics.service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 // LIBRARY:
 // JUnit 5 (an external dependency via Maven). `@TempDir` is a JUnit feature that creates a
@@ -13,13 +14,16 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.taticanalytics.exception.TrackingDataLoadException;
+import com.taticanalytics.model.FrameData;
 
 // PURPOSE:
-// Test suite for the failure paths of `TrackingDataLoader.loadData`.
+// Test suite for `TrackingDataLoader`: the failure paths of `loadData` (TA-66) and the classpath
+// loading of the bundled sample (TA-70).
 // Before TA-66, a missing or corrupted file made the loader print a stack trace and return an
 // EMPTY list, which looked like a legitimate match with zero frames. These tests guarantee that
 // the loader now fails loudly with a `TrackingDataLoadException` instead.
@@ -72,5 +76,36 @@ public class TrackingDataLoaderTest {
 
         assertTrue(exception.getMessage().contains(malformedFile.toString()));
         assertInstanceOf(IOException.class, exception.getCause());
+    }
+
+    // TA-70: the bundled sample must be found through the classpath, not through a path relative to
+    // the directory where the tests happen to run. Maven copies `src/main/resources` to the test
+    // classpath, so if this test passes, the lookup by resource name works.
+    @Test
+    public void shouldLoadBundledSampleFromClasspath() {
+
+        TrackingDataLoader loader = new TrackingDataLoader();
+
+        List<FrameData> frames = loader.loadSampleData();
+
+        assertTrue(frames.size() > 0, "Expected tracking_sample.json to contain at least one frame");
+    }
+
+    // TA-70: a wrong resource name must fail with a CLEAR message, not with a NullPointerException.
+    // `getResourceAsStream` returns null (it does not throw) when the resource does not exist.
+    @Test
+    public void shouldThrowClearExceptionWhenClasspathResourceIsMissing() {
+
+        TrackingDataLoader loader = new TrackingDataLoader();
+
+        TrackingDataLoadException exception = assertThrows(
+            TrackingDataLoadException.class,
+            () -> loader.loadFromClasspath("does_not_exist.json")
+        );
+
+        // The message names the missing resource. There is no underlying IOException to chain
+        // here (nothing was opened), so the cause is null.
+        assertTrue(exception.getMessage().contains("does_not_exist.json"));
+        assertNull(exception.getCause());
     }
 }

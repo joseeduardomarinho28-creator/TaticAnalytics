@@ -78,6 +78,11 @@ public class Main {
         // It guarantees that this list will ONLY ever contain `FrameData` objects,
         // providing type safety at compile time.
         //
+        // CLASSPATH CONCEPT (TA-70): `loadSampleData()` reads the bundled `tracking_sample.json` from the
+        // classpath instead of the relative path "src/main/resources/tracking_sample.json". The old path
+        // only worked when the program was started from the module root; the classpath works from the
+        // IDE, from `mvn` and from `java -jar` run in any directory.
+        //
         // JAVA CONCEPT: Handling an unchecked exception where it can be handled
         // `TrackingDataLoadException` is thrown when the file is missing or malformed.
         // `Main` is the right place to catch it, because it is the one that talks to the user:
@@ -87,10 +92,10 @@ public class Main {
         // which lets scripts that call this program detect the failure.
         List<FrameData> frames;
         try {
-            frames = loader.loadData("src/main/resources/tracking_sample.json");
+            frames = loader.loadSampleData();
         } catch (TrackingDataLoadException e) {
             System.err.println("Could not load the tracking data. " + e.getMessage());
-            System.err.println("Check that the file exists and contains valid tracking JSON.");
+            System.err.println("Check that the tracking resource exists and contains valid tracking JSON.");
             System.exit(1);
             // `System.exit` never returns, but the compiler does not know that. This `return`
             // tells it that `frames` is always assigned on the code that follows.
@@ -281,4 +286,4 @@ public class Main {
         }
         return rows;
     }
-}
+}

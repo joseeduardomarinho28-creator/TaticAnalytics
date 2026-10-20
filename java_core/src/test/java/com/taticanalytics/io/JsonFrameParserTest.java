@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 // (added via Maven dependencies). It is not part of the standard Java library.
 import org.junit.jupiter.api.Test;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import com.taticanalytics.model.FrameData;
@@ -111,5 +112,20 @@ public class JsonFrameParserTest {
         List<FrameData> frames = parser.loadSampleData();
 
         assertTrue(frames.size() > 0, "Expected tracking_sample.json to contain at least one frame");
+    }
+
+    // TA-70: a wrong resource name must fail with a CLEAR message that names the missing resource.
+    // It is a FileNotFoundException (a subclass of IOException), so the controller and the
+    // GlobalExceptionHandler keep handling the same exception type as before.
+    @Test
+    public void shouldThrowClearExceptionWhenClasspathResourceIsMissing() {
+        JsonFrameParser parser = new JsonFrameParser();
+
+        FileNotFoundException ex = assertThrows(
+            FileNotFoundException.class,
+            () -> parser.loadFromClasspath("does_not_exist.json")
+        );
+
+        assertTrue(ex.getMessage().contains("does_not_exist.json"));
     }
 }
