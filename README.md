@@ -172,9 +172,9 @@ classDiagram
 - **`Player`** *(extends `Entity`)* — represents an athlete on the field; adds a `teamId` attribute associating the player with a team.
 - **`Referee`** *(extends `Entity`)* — represents the match referee. Handled explicitly by `Main`.
 - **`Ball`** *(extends `Entity`)* — represents the ball; used to identify ball-related entities during possession calculations.
-- **`FrameData`** — represents the state of the field at a single instant `T`: a `frameId`, a `timestamp`, and the list of `Entity` objects present in that frame.
+- **`FrameData`** — represents the state of the field at a single instant `T`: a `frameId`, a `timestamp`, and the list of `Entity` objects present in that frame (exposed as a read-only view).
 - **`PlayerStats`** — output object encapsulating the kinematic results calculated for a player, exposing `getTotalDistance()`, `getMaxSpeed()`, and `getMaxSpeedKmh()`.
-- **`HeatmapGrid`** — output object encapsulating a spatial grid of accumulated time-on-cell values for a player, exposing `getGrid()`, `getRows()`, and `getCols()`.
+- **`HeatmapGrid`** — output object encapsulating a spatial grid of accumulated time-on-cell values for a player, exposing `getGrid()` (a deep copy), `getRows()`, and `getCols()`.
 
 ---
 
@@ -292,6 +292,8 @@ classDiagram
 
 **Responsibility:** groups all objects on the field at a single instant `T`.
 
+**Encapsulation (TA-73):** `getEntities()` returns a read-only view of the internal list, so `add`, `remove` and `clear` on it throw `UnsupportedOperationException`. The only way to add an entity is `addEntity(Entity)`. The protection is shallow: the entities inside the list can still be changed through their own methods.
+
 **Relationships:** contains `Entity` objects; consumed by `AnalyticsService` and produced by `TrackingDataLoader` / `JsonFrameParser`.
 
 ### `PlayerStats`
@@ -311,6 +313,8 @@ classDiagram
 **Responsibility:** output object encapsulating a spatial grid of accumulated time per cell for a player.
 
 **Main methods:** `addTime(double x, double y, double deltaTime)`, `getGrid()`, `getRows()`, `getCols()`.
+
+**Encapsulation (TA-73):** `getGrid()` returns a deep copy of the matrix (each row is copied; a plain `grid.clone()` would be a shallow copy that still shares the rows), so changing the returned matrix never changes the heatmap. The copy is made on every call, which is irrelevant for the default 10x15 grid.
 
 **Relationships:** produced by `AnalyticsService`; consumed by `Main` and `AnalyticsController`.
 
@@ -359,7 +363,7 @@ Overloaded variants of `calculatePossessionTimePerTeam`, `calculatePossessionTim
 
 | Method | Returns | Description |
 | --- | --- | --- |
-| `getGrid()` | `double[][]` | The accumulated time-per-cell matrix. |
+| `getGrid()` | `double[][]` | A deep copy of the accumulated time-per-cell matrix. Changing it does not change the heatmap. |
 | `getRows()` | `int` | Number of grid rows. |
 | `getCols()` | `int` | Number of grid columns. |
 
@@ -519,6 +523,8 @@ mvn test
 - `AnalyticsControllerTest` — covers the REST layer with `@WebMvcTest` and `MockMvc` (service and parser replaced by `@MockBean`): JSON responses for stats, possession (per player/team, with and without `radius`) and heatmap (no parameters, partial parameters with `MatchConstants` fallbacks, all parameters), plus the `400` (invalid `id`) and `500` (sample file cannot be loaded) error responses.
 - `JsonFrameParserTest` — covers DTO-based JSON parsing into the domain model.
 - `ExportServiceTest` — covers `ExportService` being picked up by Spring as a bean and the CSV output (header, rows, decimal dot, header-only file for an empty list, creation of missing parent folders, heatmap grid), all written to a temporary folder (`@TempDir`).
+- `FrameDataTest` — covers the encapsulation of `FrameData`: the list returned by `getEntities()` cannot be changed from outside (`UnsupportedOperationException`) and `addEntity` still works.
+- `HeatmapGridTest` — covers the encapsulation of `HeatmapGrid`: changing the matrix returned by `getGrid()` does not change the heatmap (deep copy).
 - `TrackingDataLoaderTest` — covers the failure paths of `TrackingDataLoader.loadData` (non-existent file and malformed JSON, using `@TempDir`), asserting that `TrackingDataLoadException` is thrown with the file path in the message instead of an empty list being returned.
 
 ---
@@ -574,7 +580,6 @@ This section tracks known gaps and risks identified during an internal code revi
 - **Duplicate parsing logic**: `TrackingDataLoader` (tree-based, console) and `JsonFrameParser` (DTO-based, REST API) implement the same JSON-to-domain-model mapping independently, and already behave differently on unknown entity types (one logs, the other silently ignores). Once the real data contract from the CV pipeline is defined, these should likely be unified into a single loader.
 - **API bound to the sample file**: every `AnalyticsController` endpoint always loads `tracking_sample.json` — there is no mechanism yet to submit or select a real match's tracking data. This needs to be designed once it's clear how the CV pipeline will deliver data (batch file, stream, upload endpoint, shared storage, etc.).
 - **Frame-continuity assumption vs. real tracking gaps**: distance, possession, and heatmap calculations all skip any interval where `frameId` isn't perfectly consecutive. If the CV pipeline drops or de-duplicates low-confidence frames at a different rate than expected, this could silently under-report a large share of the metrics. Worth validating against real CV output before trusting the numbers.
-- **Encapsulation leaks** (`FrameData.getEntities()`, `HeatmapGrid.getGrid()` return live mutable references) — acceptable for an MVP fed by a static sample file, but worth revisiting if the domain model starts being shared across concurrent requests/streams from a live pipeline.
 - **CORS fully open** (`allowedOrigins("*")`) — fine for local development against a CV prototype, but should be scoped down once there's a real front-end/consumer.
 
 ---
@@ -628,6 +633,9 @@ taticanalytics-core/
                     ├── io/
                     │   ├── ExportServiceTest.java
                     │   └── JsonFrameParserTest.java
+                    ├── model/
+                    │   ├── FrameDataTest.java
+                    │   └── HeatmapGridTest.java
                     └── service/
                         ├── AnalyticsServiceHeatmapTest.java
                         ├── AnalyticsServiceTest.java

@@ -8,6 +8,7 @@ package com.taticanalytics.model;
 // In Python, a simple `list = []` does this automatically. In Java, we must import them.
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
 
 // PURPOSE:
 // This class represents a single "snapshot" of the football match at a specific fraction 
@@ -73,14 +74,18 @@ public class FrameData {
         return timestamp;
     }
 
-    // LEARNING NOTE: Potential Encapsulation "Leak"
-    // This getter returns the memory reference to the actual `ArrayList` used internally.
-    // This means if another class calls `frame.getEntities().clear()`, it will 
-    // erase the contents of the list inside this object! 
-    // In advanced Java, to prevent this, you might return an unmodifiable copy:
-    // `return java.util.Collections.unmodifiableList(entities);`
-    // However, for an MVP/data-transfer object, returning the direct list is very common.
+    // ENCAPSULATION CONCEPT: Unmodifiable view (TA-73)
+    // Returning `entities` directly would hand out the memory reference to the real internal list,
+    // so any class could call `frame.getEntities().clear()` and silently empty this frame.
+    // Instead, we return a READ-ONLY VIEW of the list (not a copy):
+    // - Reading works as usual (`get`, `size`, a for-each loop).
+    // - `add`, `remove` and `clear` throw `UnsupportedOperationException`, so a bad change fails loudly
+    //   instead of corrupting the data without anyone noticing.
+    // - It is a view, so it always reflects the internal list, including entities added later through
+    //   `addEntity`. That method is the only way to add an entity to a frame.
+    // LIMIT: the protection is shallow. The list cannot be changed, but the objects inside it
+    // (the `Player`, `Ball` and `Referee` instances) can still be changed through their own methods.
     public List<Entity> getEntities() {
-        return entities;
+        return Collections.unmodifiableList(entities);
     }
-}
+}
