@@ -101,12 +101,25 @@ public class HeatmapGrid {
 
     // GETTERS
     
-    // LEARNING NOTE: Reference Leak
-    // Just like returning a `List`, returning a 2D array directly gives the caller 
-    // access to the original memory block. Another class could call `getGrid()[0][0] = 999.0;`
-    // and corrupt this heatmap's data. 
+    // ENCAPSULATION CONCEPT: Deep copy (TA-73)
+    // Returning `grid` directly would give the caller the original memory block, so another class
+    // could call `getGrid()[0][0] = 999.0;` and corrupt this heatmap's data.
+    // To prevent that, we return a DEEP COPY: a new matrix with its own copy of every row.
+    // Changing the returned matrix never changes this heatmap.
+    //
+    // GOTCHA: `grid.clone()` is NOT enough. A 2D array is an array of arrays, and `clone()` on the
+    // outer array copies only the references to the rows (a SHALLOW copy), so the copy and the original
+    // would still share the same rows. That is why each row is cloned one by one in the loop.
+    // Cloning a single row (`double[]`) is enough because `double` is a primitive value, not a reference.
+    //
+    // COST: a new matrix is created on every call. With the default 10x15 grid this is irrelevant,
+    // even though the controller serializes the heatmap on every request.
     public double[][] getGrid() {
-        return grid;
+        double[][] copy = new double[rows][];
+        for (int i = 0; i < rows; i++) {
+            copy[i] = grid[i].clone();
+        }
+        return copy;
     }
 
     public int getRows() {
@@ -116,4 +129,4 @@ public class HeatmapGrid {
     public int getCols() {
         return cols;
     }
-}
+}
