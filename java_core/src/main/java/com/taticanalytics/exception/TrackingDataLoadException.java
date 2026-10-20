@@ -13,6 +13,14 @@ package com.taticanalytics.exception;
 // how to react (e.g. `Main`, which prints a friendly message) is the one that catches it.
 public class TrackingDataLoadException extends RuntimeException {
 
+    // JAVA CONCEPT: Constructor overloading
+    // Used when there is NO underlying exception to chain, e.g. a classpath resource that simply does
+    // not exist (TA-70): `getResourceAsStream` does not throw in that case, it returns `null`,
+    // so the loader creates this exception itself with just a clear message.
+    public TrackingDataLoadException(String message) {
+        super(message);
+    }
+
     // JAVA CONCEPT: Exception chaining
     // We keep the original exception as the `cause`, so no information is lost:
     // the message says WHAT failed (including the file path), and `getCause()` says WHY.

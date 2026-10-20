@@ -198,7 +198,7 @@ classDiagram
 
 **Responsibility:** loads tracking data from a file into the domain model by walking the raw JSON tree (`JsonNode`). Used exclusively by the console app. If the file is missing or malformed, it logs the error (SLF4J) and throws `TrackingDataLoadException` instead of returning an empty list. Per-frame progress is logged at `DEBUG` level, and unknown entity types are logged as warnings.
 
-**Main methods:** `loadData(String filePath)`, `loadSampleData()`.
+**Main methods:** `loadData(String filePath)`, `loadFromClasspath(String resourceName)`, `loadSampleData()`.
 
 **Relationships:** produces `List<FrameData>`; consumed by `Main`; throws `TrackingDataLoadException`.
 
@@ -208,7 +208,7 @@ classDiagram
 
 **Responsibility:** loads tracking data via Jackson DTO deserialization (`EntityDTO`, `FrameDataDTO`) and maps it into the domain model. Used exclusively by the REST API. A Spring `@Component`.
 
-**Main methods:** `parseJsonString(String jsonContent)`, `loadSampleData()`.
+**Main methods:** `parseJsonString(String jsonContent)`, `loadFromClasspath(String resourceName)`, `loadSampleData()`.
 
 **Relationships:** produces `List<FrameData>`; consumed by `AnalyticsController`.
 
@@ -368,14 +368,16 @@ Overloaded variants of `calculatePossessionTimePerTeam`, `calculatePossessionTim
 | Method | Returns | Description |
 | --- | --- | --- |
 | `loadData(String filePath)` | `List<FrameData>` | Loads tracking data from the given file path into the domain model. Throws `TrackingDataLoadException` (unchecked) if the file is missing or malformed. |
-| `loadSampleData()` | `List<FrameData>` | Convenience overload that loads `tracking_sample.json`. |
+| `loadFromClasspath(String resourceName)` | `List<FrameData>` | Loads a tracking file bundled in the application (classpath resource, name relative to `src/main/resources`). Throws `TrackingDataLoadException` with a clear message if the resource does not exist. |
+| `loadSampleData()` | `List<FrameData>` | Convenience method that loads the bundled `tracking_sample.json` from the classpath. |
 
 ### `JsonFrameParser`
 
 | Method | Returns | Description |
 | --- | --- | --- |
 | `parseJsonString(String jsonContent)` | `List<FrameData>` | Deserializes a JSON string into DTOs, then maps it into the domain model. |
-| `loadSampleData()` | `List<FrameData>` | Convenience overload that loads and parses `tracking_sample.json`. |
+| `loadFromClasspath(String resourceName)` | `List<FrameData>` | Reads a bundled classpath resource and parses it. Throws `FileNotFoundException` with a clear message if the resource does not exist. |
+| `loadSampleData()` | `List<FrameData>` | Convenience method that loads and parses the bundled `tracking_sample.json` from the classpath. |
 
 ---
 
@@ -403,7 +405,7 @@ CORS is open to all origins (`WebConfig`), so any front-end can call this API du
 
 ## Input Data
 
-The project includes a sample tracking dataset at `src/main/resources/tracking_sample.json`, which is loaded through either `TrackingDataLoader` (console) or `JsonFrameParser` (REST API).
+The project includes a sample tracking dataset at `src/main/resources/tracking_sample.json`, which is loaded through either `TrackingDataLoader` (console) or `JsonFrameParser` (REST API). The sample is read **from the classpath** (resource name `tracking_sample.json`, with no `src/main/resources/` prefix), so it loads the same way from the IDE, from `mvn` and from a packaged `.jar` run in any directory. To load an external file instead (for example a real match), use `TrackingDataLoader.loadData(String filePath)`.
 
 The exact structure of the tracking file (field names, entity typing, etc.) is defined by this dataset and by the loader/DTO implementations. Refer to `tracking_sample.json`, `EntityDTO`, and `FrameDataDTO` directly for the authoritative format.
 
@@ -566,7 +568,6 @@ This section tracks known gaps and risks identified during an internal code revi
 - `GlobalExceptionHandler`'s catch-all handler (`Exception.class`) never logs the underlying exception server-side — an unexpected error in production would leave no trace to debug from.
 - `AnalyticsController` does not validate `rows`, `cols`, or `radius` query parameters. Invalid values (e.g. negative `rows`) fall into the generic 500 handler instead of a proper `400 Bad Request`.
 - `ExportService` is wired into the console app only. Exposing it through the REST API (a download endpoint) would require it to write to a stream instead of a file path, and a way to list the players of the match (see the roadmap).
-- File paths (`"src/main/resources/tracking_sample.json"`, hardcoded in `Main` and in both loaders' `loadSampleData()`) are relative to the working directory. This breaks once the app is packaged and run as a standalone `.jar` from a different directory; loading via classpath (`getResourceAsStream`) would be more robust.
 
 ### Dependent on the computer-vision pipeline (revisit after integration)
 
@@ -704,7 +705,7 @@ mvn test
 - [ ] Allow the REST API to process real match/tracking data instead of only the fixed sample file.
 - [ ] Add request-parameter validation (`rows`, `cols`, `radius`) with proper `400` responses.
 - [ ] Add server-side logging of unexpected exceptions in `GlobalExceptionHandler`.
-- [ ] Load bundled resources via classpath instead of relative file paths, to support running as a packaged `.jar`.
+- [x] Load bundled resources via classpath instead of relative file paths, to support running as a packaged `.jar`.
 - [ ] Package the core as a reusable `.jar` library.
 - [ ] Evaluate integration with JavaFX as an additional application layer on top of the core.
 - [ ] Define and validate the integration contract with the computer-vision tracking pipeline (schema, delivery mechanism, frame-drop handling).
