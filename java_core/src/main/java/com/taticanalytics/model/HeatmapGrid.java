@@ -73,30 +73,37 @@ public class HeatmapGrid {
         double cellWidth = fieldWidth / cols;
         double cellHeight = fieldHeight / rows;
 
-        // EXECUTION FLOW: Step 2 - Map Coordinates to Array Indices
-        // JAVA CONCEPT: Type Casting `(int)`
-        // `x / cellWidth` might result in a decimal, like 5.8. 
-        // But array indices MUST be whole numbers (integers).
-        // By putting `(int)` in front of the calculation, we force Java to chop off 
-        // the decimal part (truncation). So 5.8 becomes 5. 
-        // In Python, you would use integer division: `x // cellWidth`.
-        int colInd = (int) (x / cellWidth);
-        int rowInd = (int) (y / cellHeight);
-
-        // EXECUTION FLOW: Step 3 - Boundary Checking (Safety)
-        // JAVA CONCEPT: Logical AND (`&&`)
-        // Arrays in Java strictly enforce their boundaries. If you try to access `grid[100][0]` 
-        // on a grid that only has 10 rows, Java will crash your program with an 
-        // `ArrayIndexOutOfBoundsException`.
-        // This `if` statement ensures that the calculated row and column indices are 
-        // greater than or equal to 0, AND strictly less than the maximum size.
-        if (rowInd >= 0 && rowInd < rows && colInd >= 0 && colInd < cols) {
-            
-            // SYNTAX: Compound Assignment Operator (`+=`)
-            // `a += b` is a shortcut for `a = a + b`.
-            // We find the exact cell using `grid[rowInd][colInd]` and add the `deltaTime`.
-            grid[rowInd][colInd] += deltaTime;
+        // EXECUTION FLOW: Step 2 - Ignore positions outside the pitch (TA-76)
+        // The condition is written as "NOT inside" on purpose: any comparison with NaN is false, so
+        // `!(x >= 0 && x <= fieldWidth)` is TRUE for NaN and the position is ignored, whereas
+        // `x < 0 || x > fieldWidth` would be false for NaN and let it through.
+        // Positions are expected to be clean already (the loaders clamp or discard them, TA-76);
+        // this check just keeps the heatmap safe if it is used with other data.
+        if (!(x >= 0.0 && x <= fieldWidth) || !(y >= 0.0 && y <= fieldHeight)) {
+            return;
         }
+
+        // EXECUTION FLOW: Step 3 - Map Coordinates to Array Indices
+        // JAVA CONCEPT: Type Casting `(int)`
+        // `x / cellWidth` might result in a decimal, like 5.8.
+        // But array indices MUST be whole numbers (integers).
+        // By putting `(int)` in front of the calculation, we force Java to chop off
+        // the decimal part (truncation). So 5.8 becomes 5.
+        // In Python, you would use integer division: `x // cellWidth`.
+        //
+        // TA-76 - EDGE CASE: a position exactly on the far edge of the pitch (x = 105.0 on a 105 m
+        // pitch, which is a perfectly valid value) gives 105.0 / 7.0 = 15, but the last column is 14
+        // (a grid with 15 columns has indices 0..14). Before, that position was silently dropped.
+        // `Math.min(..., cols - 1)` makes the far edge belong to the LAST cell, so no valid
+        // position is lost.
+        int colInd = Math.min((int) (x / cellWidth), cols - 1);
+        int rowInd = Math.min((int) (y / cellHeight), rows - 1);
+
+        // SYNTAX: Compound Assignment Operator (`+=`)
+        // `a += b` is a shortcut for `a = a + b`.
+        // We find the exact cell using `grid[rowInd][colInd]` and add the `deltaTime`.
+        // Since the position was checked above, both indexes are always valid here.
+        grid[rowInd][colInd] += deltaTime;
     }
 
     // GETTERS

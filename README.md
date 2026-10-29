@@ -55,6 +55,7 @@ Its internal design separates domain modeling, data loading/parsing, and analyti
 ### ✅ Implemented
 
 - Loading of tracking data into the domain model, via two parallel paths: `TrackingDataLoader` (tree-based JSON parsing, used by the console app) and `JsonFrameParser` (DTO-based parsing, used by the REST API).
+- **Validation of the tracking data on load (TA-76)**: coordinates slightly outside the pitch are clamped, entities far outside it (e.g. in pixel scale) are discarded, required fields are enforced, and the team/ball/id rules of each frame are checked. Both loaders share the same rules. See [Validation on load](#validation-on-load-ta-76).
 - Calculation of **total distance covered** by a player.
 - Calculation of **maximum speed** reached by a player.
 - Calculation of **ball possession per team**, with protection against retroactive attribution and handling of occlusion/contested ball.
@@ -196,7 +197,7 @@ classDiagram
 
 **Package:** `com.taticanalytics.service`
 
-**Responsibility:** loads tracking data from a file into the domain model by walking the raw JSON tree (`JsonNode`). Used exclusively by the console app. If the file is missing or malformed, it logs the error (SLF4J) and throws `TrackingDataLoadException` instead of returning an empty list. Per-frame progress is logged at `DEBUG` level, and unknown entity types are logged as warnings.
+**Responsibility:** loads tracking data from a file into the domain model by walking the raw JSON tree (`JsonNode`). Used exclusively by the console app. If the file is missing or malformed, it logs the error (SLF4J) and throws `TrackingDataLoadException` instead of returning an empty list. Per-frame progress is logged at `DEBUG` level, and unknown entity types are logged as warnings. Every entity goes through the coordinate and frame checks described in [Validation on load](#validation-on-load-ta-76); a missing required field (`type`, `id`, `x`, `y`, and `team_id` for players) rejects the file with a `TrackingDataLoadException` that names the field and the frame.
 
 **Main methods:** `loadData(String filePath)`, `loadFromClasspath(String resourceName)`, `loadSampleData()`.
 
@@ -206,7 +207,7 @@ classDiagram
 
 **Package:** `com.taticanalytics.io`
 
-**Responsibility:** loads tracking data via Jackson DTO deserialization (`EntityDTO`, `FrameDataDTO`) and maps it into the domain model. Used exclusively by the REST API. A Spring `@Component`.
+**Responsibility:** loads tracking data via Jackson DTO deserialization (`EntityDTO`, `FrameDataDTO`) and maps it into the domain model. Used exclusively by the REST API. A Spring `@Component`. It applies the same validation as `TrackingDataLoader` (see [Validation on load](#validation-on-load-ta-76)); a missing required field is reported with an `IOException` that names the field and the frame.
 
 **Main methods:** `parseJsonString(String jsonContent)`, `loadFromClasspath(String resourceName)`, `loadSampleData()`.
 
@@ -216,7 +217,35 @@ classDiagram
 
 **Package:** `com.taticanalytics.io.dto`
 
-**Responsibility:** "dumb" Java `record`s that mirror the raw JSON shape, used as an intermediate deserialization target before being mapped into the "smart" domain model by `JsonFrameParser`.
+**Responsibility:** "dumb" Java `record`s that mirror the raw JSON shape, used as an intermediate deserialization target before being mapped into the "smart" domain model by `JsonFrameParser`. `id`, `x` and `y` are wrapper types (`Integer`, `Double`) on purpose (TA-76): a field missing from the JSON becomes `null` and can be rejected, whereas a primitive would have silently become `0`.
+
+### `CoordinateStatus` / `CoordinateValidator` (TA-76)
+
+**Package:** `com.taticanalytics.validation`
+
+**Responsibility:** `CoordinateStatus` is an enum with the three possible answers for a position: `INSIDE`, `WITHIN_MARGIN` and `OUT_OF_RANGE`. `CoordinateValidator` is a stateless utility class that answers the question: `classify(x, y)` says in which zone a point is (`NaN` counts as out of range) and `clamp(value, max)` pushes a value into `[0, max]`. It only classifies; what to do with each answer is decided by the caller.
+
+**Relationships:** uses `MatchConstants` (`FIELD_LENGTH`, `FIELD_WIDTH`, `COORDINATE_MARGIN`); used by `CoordinateSanitizer`.
+
+### `CoordinateSanitizer` (TA-76)
+
+**Package:** `com.taticanalytics.validation`
+
+**Responsibility:** applies the coordinate policy to every entity reading of ONE tracking file (keep, clamp, or discard) and counts what it did. At the end of the load it logs one summary line and, if more than `COORDINATE_ALERT_RATIO` (5%) of the readings needed correction, an extra alert. It holds counters, so it is NOT a Spring bean: each loader creates a new one per file.
+
+**Main methods:** `sanitize(int entityId, double x, double y)` (returns an `Optional<Position>`, empty when the entity must be discarded), `logSummary()`, `getCorrectedRatio()`.
+
+**Relationships:** used by `TrackingDataLoader` and `JsonFrameParser`; uses `CoordinateValidator`.
+
+### `FrameIntegrityChecker` (TA-76)
+
+**Package:** `com.taticanalytics.validation`
+
+**Responsibility:** checks the structure of the entities of each frame: a player's `team_id` must be 1 or 2, there is at most one ball per frame, and ids are unique across players, ball and referees. An entity that breaks a rule is discarded with a `WARN` (the first one wins), and the frame is kept. Like the sanitizer, it holds state (the ids already seen in the current frame), so each loader creates a new one per file.
+
+**Main methods:** `startFrame()` (must be called at the start of every frame), `accept(int frameId, Entity entity)`, `logSummary()`.
+
+**Relationships:** used by `TrackingDataLoader` and `JsonFrameParser`.
 
 ### `ExportService`
 
@@ -316,13 +345,15 @@ classDiagram
 
 **Encapsulation (TA-73):** `getGrid()` returns a deep copy of the matrix (each row is copied; a plain `grid.clone()` would be a shallow copy that still shares the rows), so changing the returned matrix never changes the heatmap. The copy is made on every call, which is irrelevant for the default 10x15 grid.
 
+**Edge behavior (TA-76):** a position exactly on the far edge of the pitch (`x = 105.0` or `y = 68.0`) is valid and counts in the last column/row; before, its index was one past the end and the time was silently dropped. A position outside the pitch (including `NaN`) is ignored; before, a small negative value such as `x = -0.5` was wrongly counted in column 0 because casting to `int` truncates toward zero.
+
 **Relationships:** produced by `AnalyticsService`; consumed by `Main` and `AnalyticsController`.
 
 ### `MatchConstants`
 
 **Package:** `com.taticanalytics.util`
 
-**Responsibility:** central holder for fixed configuration values (field dimensions, possession radius, default heatmap grid resolution), avoiding magic numbers scattered through the business logic.
+**Responsibility:** central holder for fixed configuration values (field dimensions, possession radius, default heatmap grid resolution, and, since TA-76, the coordinate tolerance `COORDINATE_MARGIN` and the alert threshold `COORDINATE_ALERT_RATIO`), avoiding magic numbers scattered through the business logic.
 
 ### `Main`
 
@@ -420,6 +451,24 @@ The exact structure of the tracking file (field names, entity typing, etc.) is d
 `match_info.resolution` (e.g. `{"width": 1920, "height": 1080}`) is kept as legitimate metadata about the **source video** the tracking data was extracted from — it has no relationship to the `x`/`y` scale and is not read by any calculation. Don't use it to infer units.
 
 The sample was also regenerated with 30 frames and 8 players (4 per team, plus the ball and the referee) instead of 2 frames and 3 entities, with a short possession change from one player to another, so it's actually enough to exercise possession switching, a heatmap that spans more than one cell, and a ranking across several players — not just confirm that parsing doesn't crash. Frame-to-frame displacements were kept physically plausible for 30 fps footage (a few m/s of jogging for most players, a single faster stretch of a few m/s more for a firm pass).
+
+### Validation on load (TA-76)
+
+The tracking file comes from computer vision, so it can contain measurement noise or broken values. Both loaders (`TrackingDataLoader` and `JsonFrameParser`) apply the same rules while reading the file, and nothing is corrected or dropped silently: every case is counted and logged.
+
+| Situation | What happens |
+|---|---|
+| Position inside the pitch (`x` in [0, 105], `y` in [0, 68]) | Kept as it came. |
+| Position up to **2 m** outside the pitch (`COORDINATE_MARGIN`) | Treated as measurement noise: **clamped** to the nearest edge and kept. |
+| Position more than 2 m outside, or not a number (this includes values in pixel scale, e.g. `x: 960`) | The entity is **discarded** from that frame, with a `WARN`. The frame itself is kept. |
+| Missing required field: `type`, `id`, `x`, `y`, or `team_id` on a player | The **whole file is rejected** with a clear message (which field, which frame). The file's producer broke the contract and a value cannot be guessed. |
+| Player whose `team_id` is not 1 or 2 | The entity is discarded, with a `WARN`. |
+| A second ball in the same frame | The extra ball is discarded, with a `WARN` (the first one wins). |
+| An `id` already used by another entity in the same frame | The later entity is discarded, with a `WARN` (the first one wins). |
+
+At the end of each load, one line summarizes how many readings were checked, clamped and discarded. If more than **5%** of the readings needed correction (`COORDINATE_ALERT_RATIO`), an extra alert is logged: that rate is a sign of a systematic problem, such as a wrong camera calibration in the CV pipeline, and not of random noise. To avoid flooding the log, only the first 10 discards are logged one by one; the rest are only counted in the summary.
+
+**Why discard instead of rejecting the file?** The three options considered were rejecting the whole file, discarding only the affected entity, or accepting everything and just logging. Rejecting makes one bad frame ruin a whole match, and accepting everything lets wrong data into the calculations. Discarding the entity (and only that entity) is the middle ground and matches the rule that an absent entity in a frame is acceptable. The exception is a missing required field, which is a broken contract rather than a noisy value.
 
 ---
 
@@ -521,11 +570,14 @@ mvn test
 - `AnalyticsServiceTest` — covers the ball-possession state machine (per team and per player), including protection against retroactive attribution, as well as the kinematic calculations (distance/speed).
 - `AnalyticsServiceHeatmapTest` — covers heatmap cell accumulation, frame-gap handling, non-existent players, and default-dimension fallbacks.
 - `AnalyticsControllerTest` — covers the REST layer with `@WebMvcTest` and `MockMvc` (service and parser replaced by `@MockBean`): JSON responses for stats, possession (per player/team, with and without `radius`) and heatmap (no parameters, partial parameters with `MatchConstants` fallbacks, all parameters), plus the `400` (invalid `id`) and `500` (sample file cannot be loaded) error responses.
-- `JsonFrameParserTest` — covers DTO-based JSON parsing into the domain model.
+- `JsonFrameParserTest` — covers DTO-based JSON parsing into the domain model and, since TA-76, the same validation rules as `TrackingDataLoader`.
 - `ExportServiceTest` — covers `ExportService` being picked up by Spring as a bean and the CSV output (header, rows, decimal dot, header-only file for an empty list, creation of missing parent folders, heatmap grid), all written to a temporary folder (`@TempDir`).
 - `FrameDataTest` — covers the encapsulation of `FrameData`: the list returned by `getEntities()` cannot be changed from outside (`UnsupportedOperationException`) and `addEntity` still works.
-- `HeatmapGridTest` — covers the encapsulation of `HeatmapGrid`: changing the matrix returned by `getGrid()` does not change the heatmap (deep copy).
-- `TrackingDataLoaderTest` — covers the failure paths of `TrackingDataLoader.loadData` (non-existent file and malformed JSON, using `@TempDir`), asserting that `TrackingDataLoadException` is thrown with the file path in the message instead of an empty list being returned.
+- `HeatmapGridTest` — covers the encapsulation of `HeatmapGrid`: changing the matrix returned by `getGrid()` does not change the heatmap (deep copy), and, since TA-76, a position on the far edge counts in the last cell while positions outside the pitch are ignored.
+- `TrackingDataLoaderTest` — covers the failure paths of `TrackingDataLoader.loadData` (non-existent file and malformed JSON, using `@TempDir`), asserting that `TrackingDataLoadException` is thrown with the file path in the message instead of an empty list being returned. Since TA-76 it also covers the validation on load: clamping, discarding (including pixel-scale coordinates), missing required fields, and the team/ball/id rules.
+- `CoordinateValidatorTest` — covers the boundaries of the three coordinate zones (corner of the pitch, exactly 2 m outside, just past 2 m, `NaN`) and `clamp` (TA-76).
+- `CoordinateSanitizerTest` — covers keep/clamp/discard, the counters and the share of corrected readings used by the 5% alert (TA-76).
+- `FrameIntegrityCheckerTest` — covers the `team_id`, single-ball and unique-id rules, and that the checker forgets its memory when a new frame starts (TA-76).
 
 ---
 
@@ -577,7 +629,7 @@ This section tracks known gaps and risks identified during an internal code revi
 
 ### Dependent on the computer-vision pipeline (revisit after integration)
 
-- **Duplicate parsing logic**: `TrackingDataLoader` (tree-based, console) and `JsonFrameParser` (DTO-based, REST API) implement the same JSON-to-domain-model mapping independently, and already behave differently on unknown entity types (one logs, the other silently ignores). Once the real data contract from the CV pipeline is defined, these should likely be unified into a single loader.
+- **Duplicate parsing logic**: `TrackingDataLoader` (tree-based, console) and `JsonFrameParser` (DTO-based, REST API) implement the same JSON-to-domain-model mapping independently, and already behave differently on unknown entity types (one logs, the other silently ignores). Once the real data contract from the CV pipeline is defined, these should likely be unified into a single loader. (Since TA-76 both already share the same validation classes, so the validation rules themselves cannot drift apart; only the JSON-to-domain mapping is duplicated.)
 - **API bound to the sample file**: every `AnalyticsController` endpoint always loads `tracking_sample.json` — there is no mechanism yet to submit or select a real match's tracking data. This needs to be designed once it's clear how the CV pipeline will deliver data (batch file, stream, upload endpoint, shared storage, etc.).
 - **Frame-continuity assumption vs. real tracking gaps**: distance, possession, and heatmap calculations all skip any interval where `frameId` isn't perfectly consecutive. If the CV pipeline drops or de-duplicates low-confidence frames at a different rate than expected, this could silently under-report a large share of the metrics. Worth validating against real CV output before trusting the numbers.
 - **CORS fully open** (`allowedOrigins("*")`) — fine for local development against a CV prototype, but should be scoped down once there's a real front-end/consumer.
@@ -620,8 +672,13 @@ taticanalytics-core/
     │   │           ├── service/
     │   │           │   ├── AnalyticsService.java
     │   │           │   └── TrackingDataLoader.java
-    │   │           └── util/
-    │   │               └── MatchConstants.java
+    │   │           ├── util/
+    │   │           │   └── MatchConstants.java
+    │   │           └── validation/
+    │   │               ├── CoordinateSanitizer.java
+    │   │               ├── CoordinateStatus.java
+    │   │               ├── CoordinateValidator.java
+    │   │               └── FrameIntegrityChecker.java
     │   └── resources/
     │       └── tracking_sample.json
     └── test/
@@ -636,10 +693,14 @@ taticanalytics-core/
                     ├── model/
                     │   ├── FrameDataTest.java
                     │   └── HeatmapGridTest.java
-                    └── service/
-                        ├── AnalyticsServiceHeatmapTest.java
-                        ├── AnalyticsServiceTest.java
-                        └── TrackingDataLoaderTest.java
+                    ├── service/
+                    │   ├── AnalyticsServiceHeatmapTest.java
+                    │   ├── AnalyticsServiceTest.java
+                    │   └── TrackingDataLoaderTest.java
+                    └── validation/
+                        ├── CoordinateSanitizerTest.java
+                        ├── CoordinateValidatorTest.java
+                        └── FrameIntegrityCheckerTest.java
 ```
 
 ---
@@ -714,6 +775,7 @@ mvn test
 - [ ] Add request-parameter validation (`rows`, `cols`, `radius`) with proper `400` responses.
 - [ ] Add server-side logging of unexpected exceptions in `GlobalExceptionHandler`.
 - [x] Load bundled resources via classpath instead of relative file paths, to support running as a packaged `.jar`.
+- [x] Validate the tracking data on load (coordinate limits, required fields, team/ball/id rules) with a shared policy and a summary log (TA-76).
 - [ ] Package the core as a reusable `.jar` library.
 - [ ] Evaluate integration with JavaFX as an additional application layer on top of the core.
 - [ ] Define and validate the integration contract with the computer-vision tracking pipeline (schema, delivery mechanism, frame-drop handling).

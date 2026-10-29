@@ -13,12 +13,14 @@ import java.util.List;
 // temporary folder before the test and deletes it afterwards, so tests never leave files behind.
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.taticanalytics.exception.TrackingDataLoadException;
+import com.taticanalytics.model.Entity;
 import com.taticanalytics.model.FrameData;
 
 // PURPOSE:
@@ -107,5 +109,154 @@ public class TrackingDataLoaderTest {
         // here (nothing was opened), so the cause is null.
         assertTrue(exception.getMessage().contains("does_not_exist.json"));
         assertNull(exception.getCause());
+    }
+
+    // TA-76: coordinate policy applied while loading a file from disk.
+    // - player 7 is slightly outside the pitch (x = 105.8, y = -1.2): CLAMPED to (105.0, 0.0);
+    // - the ball is 235 m outside the pitch (x = 340): DISCARDED, but the frame is kept;
+    // - player 8 is inside the pitch: unchanged.
+    @Test
+    public void shouldClampNearbyPositionsAndDiscardFarAwayOnesWhenLoadingAFile() throws IOException {
+
+        // ARRANGE
+        Path file = tempDir.resolve("coordinates.json");
+        Files.writeString(file, """
+            {
+              "frames": [
+                { "frame_id": 1, "timestamp": 0.04, "entities": [
+                  { "type": "player", "id": 7, "x": 105.8, "y": -1.2, "team_id": 1 },
+                  { "type": "ball", "id": 0, "x": 340.0, "y": 30.0 },
+                  { "type": "player", "id": 8, "x": 50.0, "y": 30.0, "team_id": 2 }
+                ] }
+              ]
+            }
+            """);
+        TrackingDataLoader loader = new TrackingDataLoader();
+
+        // ACT
+        List<FrameData> frames = loader.loadData(file.toString());
+
+        // ASSERT: the frame is still there, with 2 of the 3 entities (the ball was discarded).
+        assertEquals(1, frames.size());
+        List<Entity> entities = frames.get(0).getEntities();
+        assertEquals(2, entities.size());
+
+        assertEquals(7, entities.get(0).getId());
+        assertEquals(105.0, entities.get(0).getX(), 0.0001);
+        assertEquals(0.0, entities.get(0).getY(), 0.0001);
+
+        assertEquals(8, entities.get(1).getId());
+        assertEquals(50.0, entities.get(1).getX(), 0.0001);
+    }
+
+    // TA-76: a position in PIXEL scale (the original problem of `tracking_sample.json`, see the README) is
+    // far outside a 105 m x 68 m pitch, so the entity must be discarded instead of silently breaking the heatmap.
+    @Test
+    public void shouldDiscardEntitiesWithPixelScaleCoordinates() throws IOException {
+
+        // ARRANGE: one player at the center of a 1920x1080 video frame, in pixels (960, 540).
+        Path file = tempDir.resolve("pixels.json");
+        Files.writeString(file, """
+            {
+              "frames": [
+                { "frame_id": 1, "timestamp": 0.04, "entities": [
+                  { "type": "player", "id": 7, "x": 960.0, "y": 540.0, "team_id": 1 }
+                ] }
+              ]
+            }
+            """);
+        TrackingDataLoader loader = new TrackingDataLoader();
+
+        // ACT
+        List<FrameData> frames = loader.loadData(file.toString());
+
+        // ASSERT: the frame is still there, but without the player.
+        assertEquals(1, frames.size());
+        assertEquals(0, frames.get(0).getEntities().size());
+    }
+
+    // TA-76: a REQUIRED field that is missing must fail loudly. Before, the missing key made `get("x")`
+    // return null and the next call crashed with an unexplained NullPointerException.
+    @Test
+    public void shouldRejectTheFileWhenAnEntityIsMissingARequiredField() throws IOException {
+
+        // ARRANGE: a player WITHOUT "x".
+        Path file = tempDir.resolve("missing_x.json");
+        Files.writeString(file, """
+            {
+              "frames": [
+                { "frame_id": 3, "timestamp": 0.12, "entities": [
+                  { "type": "player", "id": 7, "y": 30.0, "team_id": 1 }
+                ] }
+              ]
+            }
+            """);
+        TrackingDataLoader loader = new TrackingDataLoader();
+
+        // ACT + ASSERT
+        TrackingDataLoadException exception = assertThrows(
+            TrackingDataLoadException.class,
+            () -> loader.loadData(file.toString())
+        );
+
+        // The message says WHICH field of WHICH frame is missing.
+        assertTrue(exception.getMessage().contains("\"x\""));
+        assertTrue(exception.getMessage().contains("frame 3"));
+    }
+
+    @Test
+    public void shouldRejectTheFileWhenAPlayerHasNoTeamId() throws IOException {
+
+        Path file = tempDir.resolve("missing_team.json");
+        Files.writeString(file, """
+            {
+              "frames": [
+                { "frame_id": 1, "timestamp": 0.04, "entities": [
+                  { "type": "player", "id": 7, "x": 10.0, "y": 30.0 }
+                ] }
+              ]
+            }
+            """);
+        TrackingDataLoader loader = new TrackingDataLoader();
+
+        TrackingDataLoadException exception = assertThrows(
+            TrackingDataLoadException.class,
+            () -> loader.loadData(file.toString())
+        );
+
+        assertTrue(exception.getMessage().contains("\"team_id\""));
+    }
+
+    // TA-76: the structure rules of a frame, applied while loading a file.
+    // The frame has 5 entities and only 2 survive:
+    // - player 1 (team 1) and the ball 0 are valid;
+    // - player 2 has team_id 3, which does not exist: discarded;
+    // - ball 5 is a SECOND ball in the frame: discarded;
+    // - referee 1 repeats the id of player 1: discarded (the first one wins).
+    @Test
+    public void shouldDiscardInvalidTeamExtraBallAndDuplicateIdWhenLoadingAFile() throws IOException {
+
+        Path file = tempDir.resolve("structure.json");
+        Files.writeString(file, """
+            {
+              "frames": [
+                { "frame_id": 1, "timestamp": 0.04, "entities": [
+                  { "type": "player", "id": 1, "x": 10.0, "y": 10.0, "team_id": 1 },
+                  { "type": "player", "id": 2, "x": 20.0, "y": 20.0, "team_id": 3 },
+                  { "type": "ball", "id": 0, "x": 15.0, "y": 15.0 },
+                  { "type": "ball", "id": 5, "x": 60.0, "y": 30.0 },
+                  { "type": "referee", "id": 1, "x": 50.0, "y": 30.0 }
+                ] }
+              ]
+            }
+            """);
+        TrackingDataLoader loader = new TrackingDataLoader();
+
+        List<FrameData> frames = loader.loadData(file.toString());
+
+        List<Entity> entities = frames.get(0).getEntities();
+        assertEquals(2, entities.size());
+        assertEquals(1, entities.get(0).getId());
+        assertEquals(0, entities.get(1).getId());
     }
 }

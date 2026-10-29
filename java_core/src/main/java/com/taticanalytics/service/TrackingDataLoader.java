@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.io.IOException;
 import java.io.File;
 import java.io.InputStream;
+import java.util.Optional;
 
 // LIBRARY: Jackson (JSON Parser)
 // ObjectMapper is the core class of the Jackson library. It's the engine that 
@@ -14,10 +15,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.taticanalytics.exception.TrackingDataLoadException;
+import com.taticanalytics.model.Entity;
 import com.taticanalytics.model.FrameData;
 import com.taticanalytics.model.Player;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.model.Referee;
+import com.taticanalytics.validation.CoordinateSanitizer;
+import com.taticanalytics.validation.FrameIntegrityChecker;
 
 // LIBRARY: SLF4J (Simple Logging Facade for Java)
 // SLF4J is a standard logging API that comes with the Spring Boot starter (backed by Logback).
@@ -133,6 +137,14 @@ public class TrackingDataLoader {
     private List<FrameData> parseFrames(JsonNode rootNode) {
         List<FrameData> frames = new ArrayList<>();
 
+        // TA-76: one sanitizer PER FILE. It applies the coordinate policy to every entity (keep, clamp
+        // or discard) and counts what it did, so a single summary can be logged at the end.
+        // It is created here, and not as a field, because its counters must start from zero on every load.
+        CoordinateSanitizer sanitizer = new CoordinateSanitizer();
+
+        // TA-76: same idea for the structure of each frame (valid team_id, at most one ball, unique ids).
+        FrameIntegrityChecker checker = new FrameIntegrityChecker();
+
         // Navigating the tree: We ask the root object for the key named "frames"
         JsonNode framesNode = rootNode.get("frames");
 
@@ -150,6 +162,9 @@ public class TrackingDataLoader {
 
                 FrameData currentFrame = new FrameData(frameId, timestamp);
 
+                // TA-76: the "ids seen" and "ball seen" memory of the checker is per frame.
+                checker.startFrame();
+
                 // LOGGING CONCEPT: debug level
                 // One line per frame is far too noisy for a real match (thousands of frames),
                 // so it is logged at DEBUG, which is hidden by default. The `{}` placeholders
@@ -159,42 +174,98 @@ public class TrackingDataLoader {
                 JsonNode entitiesNode = frameNode.get("entities");
 
                 if (entitiesNode != null && entitiesNode.isArray()) {
+
+                    // Position of the entity inside the frame (1, 2, 3...), only used to build a clear error message.
+                    int entityNumber = 0;
+
                     for (JsonNode entityNode : entitiesNode) {
-                        
+                        entityNumber++;
+
                         // Extracting common Entity fields
-                        String type = entityNode.get("type").asText();
-                        int id = entityNode.get("id").asInt();
-                        double x = entityNode.get("x").asDouble();
-                        double y = entityNode.get("y").asDouble();
+                        // TA-76: these fields are REQUIRED. Before, a missing key made `get(...)` return null and
+                        // the next `.asInt()` crashed with an unexplained NullPointerException. `requireField`
+                        // fails with a message that says WHICH field of WHICH entity of WHICH frame is missing.
+                        String type = requireField(entityNode, "type", frameId, entityNumber).asText();
+                        int id = requireField(entityNode, "id", frameId, entityNumber).asInt();
+                        double x = requireField(entityNode, "x", frameId, entityNumber).asDouble();
+                        double y = requireField(entityNode, "y", frameId, entityNumber).asDouble();
+
+                        // TA-76: a player must also have a team (the value itself is checked later, by the
+                        // FrameIntegrityChecker). Only players need it: a ball or a referee has no team.
+                        int teamId = -1;
+                        if ("player".equals(type)) {
+                            teamId = requireField(entityNode, "team_id", frameId, entityNumber).asInt();
+                        }
+
+                        // TA-76: validate the position BEFORE creating the entity.
+                        // - slightly outside the pitch (up to 2 m): `x` and `y` are replaced by the clamped values;
+                        // - too far away (or NaN): the Optional is empty, so `continue` skips this entity and
+                        //   moves on to the next one (the frame itself is kept, just without this entity).
+                        // JAVA CONCEPT: `continue` ends the CURRENT iteration of the loop and starts the next one.
+                        Optional<CoordinateSanitizer.Position> position = sanitizer.sanitize(id, x, y);
+                        if (position.isEmpty()) {
+                            continue;
+                        }
+                        x = position.get().x();
+                        y = position.get().y();
                     
                         // JAVA CONCEPT: Switch Statement (String matching)
                         // A cleaner alternative to a long chain of if-else blocks.
                         // Here, the "Factory" pattern is informally used: we decide WHICH 
                         // specific subclass to instantiate based on the "type" string in the JSON.
+                        //
+                        // TA-76: the switch now only BUILDS the entity. Adding it to the frame happens after the
+                        // switch, and only if the structure checks accept it.
+                        Entity entity = null;
                         switch (type) {
                             case "player":
-                                int teamId = entityNode.get("team_id").asInt();
-                                Player player = new Player(id, x, y, teamId);
-                                currentFrame.addEntity(player);
+                                entity = new Player(id, x, y, teamId);
                                 break;
                             case "ball":
-                                Ball ball = new Ball(id, x, y);
-                                currentFrame.addEntity(ball);
+                                entity = new Ball(id, x, y);
                                 break;
                             case "referee":
-                                Referee referee = new Referee(id, x, y);
-                                currentFrame.addEntity(referee);
+                                entity = new Referee(id, x, y);
                                 break;
                             default:
                                 logger.warn("Ignoring unknown entity type: {}", type);
                                 break;
+                        }
+
+                        // `entity` is still null for an unknown type. `accept` returns false when the entity breaks a
+                        // structure rule (invalid team_id, second ball, repeated id): it is then simply not added.
+                        if (entity != null && checker.accept(frameId, entity)) {
+                            currentFrame.addEntity(entity);
                         }
                     }
                 }
                 frames.add(currentFrame);
             }
         }
+
+        // TA-76: one summary line per file (and an ALERT when more than 5% of the readings needed fixing).
+        sanitizer.logSummary();
+        checker.logSummary();
         return frames;
+    }
+
+    // PURPOSE (TA-76):
+    // Returns the value of a REQUIRED field of an entity, or fails with a clear message when the field is
+    // missing (or explicitly `null`). We reject the whole file instead of guessing, because a missing `x`, `y`,
+    // `id` or `team_id` means the producer of the file (the CV pipeline) broke the data contract, and
+    // inventing a value (like 0) would silently put a player in the corner of the pitch.
+    //
+    // JACKSON CONCEPT: `get("x")` returns Java `null` when the key does not exist, and a `NullNode`
+    // (`isNull()` is true) when the JSON has `"x": null`. Both cases mean "no value", so we check both.
+    private JsonNode requireField(JsonNode entityNode, String field, int frameId, int entityNumber) {
+        JsonNode value = entityNode.get(field);
+        if (value == null || value.isNull()) {
+            String message = "Entity " + entityNumber + " of frame " + frameId
+                + " is missing the required field \"" + field + "\"";
+            logger.error(message);
+            throw new TrackingDataLoadException(message);
+        }
+        return value;
     }
 
     // Convenience method that loads the bundled sample.

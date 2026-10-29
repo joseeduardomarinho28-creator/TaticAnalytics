@@ -33,4 +33,26 @@ public final class MatchConstants {
     // Default resolution/granularity for spatial heatmaps (10 rows, 15 columns of grid cells)
     public static final int DEFAULT_GRID_ROWS = 10;
     public static final int DEFAULT_GRID_COLS = 15;
+
+    // TA-76: Measurement tolerance, in meters, for coordinates that fall slightly outside the pitch.
+    // The CV pipeline estimates positions from video, so a player standing on the touchline can be
+    // reported as x = 105.4 purely because of measurement noise. The coordinate validator uses this
+    // margin to tell noise apart from a truly broken value:
+    //   - up to this far outside the pitch  -> the value is CLAMPED to the nearest edge and kept;
+    //   - farther than this                 -> the entity is DISCARDED with a WARN, because the
+    //                                          value can no longer be trusted (e.g. broken calibration).
+    // With the 105x68 pitch above, the accepted range is therefore x in [-2, 107] and y in [-2, 70].
+    //
+    // LEARNING NOTE: this has the same VALUE as BALL_CONTROL_RADIUS but a different MEANING
+    // (a measurement tolerance, not a distance to the ball). They are kept as two separate constants
+    // on purpose, so tuning one of them never silently changes the other. Never reuse a constant
+    // just because its number happens to match: name it after what it MEANS.
+    public static final double COORDINATE_MARGIN = 2.0;
+
+    // TA-76: Share of the entity readings in ONE tracking file that may need correction
+    // (clamped or discarded) before the loader logs an ALERT. 0.05 means 5%.
+    // A few corrections are normal measurement noise. When more than 5% of the readings are
+    // affected, the problem is probably systematic (e.g. a wrong camera calibration in the CV
+    // pipeline), so someone should look at the data source instead of trusting the "fixed" values.
+    public static final double COORDINATE_ALERT_RATIO = 0.05;
 }
