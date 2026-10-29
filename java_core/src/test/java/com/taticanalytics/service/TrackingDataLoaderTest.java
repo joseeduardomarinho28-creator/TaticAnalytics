@@ -13,12 +13,14 @@ import java.util.List;
 // temporary folder before the test and deletes it afterwards, so tests never leave files behind.
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.taticanalytics.exception.TrackingDataLoadException;
+import com.taticanalytics.model.Entity;
 import com.taticanalytics.model.FrameData;
 
 // PURPOSE:
@@ -107,5 +109,43 @@ public class TrackingDataLoaderTest {
         // here (nothing was opened), so the cause is null.
         assertTrue(exception.getMessage().contains("does_not_exist.json"));
         assertNull(exception.getCause());
+    }
+
+    // TA-76: coordinate policy applied while loading a file from disk.
+    // - player 7 is slightly outside the pitch (x = 105.8, y = -1.2): CLAMPED to (105.0, 0.0);
+    // - the ball is 235 m outside the pitch (x = 340): DISCARDED, but the frame is kept;
+    // - player 8 is inside the pitch: unchanged.
+    @Test
+    public void shouldClampNearbyPositionsAndDiscardFarAwayOnesWhenLoadingAFile() throws IOException {
+
+        // ARRANGE
+        Path file = tempDir.resolve("coordinates.json");
+        Files.writeString(file, """
+            {
+              "frames": [
+                { "frame_id": 1, "timestamp": 0.04, "entities": [
+                  { "type": "player", "id": 7, "x": 105.8, "y": -1.2, "team_id": 1 },
+                  { "type": "ball", "id": 0, "x": 340.0, "y": 30.0 },
+                  { "type": "player", "id": 8, "x": 50.0, "y": 30.0, "team_id": 2 }
+                ] }
+              ]
+            }
+            """);
+        TrackingDataLoader loader = new TrackingDataLoader();
+
+        // ACT
+        List<FrameData> frames = loader.loadData(file.toString());
+
+        // ASSERT: the frame is still there, with 2 of the 3 entities (the ball was discarded).
+        assertEquals(1, frames.size());
+        List<Entity> entities = frames.get(0).getEntities();
+        assertEquals(2, entities.size());
+
+        assertEquals(7, entities.get(0).getId());
+        assertEquals(105.0, entities.get(0).getX(), 0.0001);
+        assertEquals(0.0, entities.get(0).getY(), 0.0001);
+
+        assertEquals(8, entities.get(1).getId());
+        assertEquals(50.0, entities.get(1).getX(), 0.0001);
     }
 }

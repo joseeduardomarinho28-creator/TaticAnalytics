@@ -10,6 +10,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 
 // Domain model imports (The "Smart" objects with behavior)
 import com.taticanalytics.model.FrameData;
@@ -17,6 +18,7 @@ import com.taticanalytics.model.Entity;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.model.Player;
 import com.taticanalytics.model.Referee;
+import com.taticanalytics.validation.CoordinateSanitizer;
 
 // DTO imports (The "Dumb" objects that just carry data)
 import com.taticanalytics.io.dto.EntityDTO;
@@ -130,6 +132,11 @@ public class JsonFrameParser {
     private List<FrameData> convertToDomain(List<FrameDataDTO> dtos) {
         List<FrameData> frames = new ArrayList<>();
 
+        // TA-76: one sanitizer PER CALL. It applies the coordinate policy (keep, clamp or discard) to every
+        // entity and counts what it did. It is a local variable, and not a field, because this class is a
+        // Spring singleton and the counters must start from zero on every parse.
+        CoordinateSanitizer sanitizer = new CoordinateSanitizer();
+
         // Loop through each frame DTO
         for (FrameDataDTO dto : dtos) {
 
@@ -145,9 +152,9 @@ public class JsonFrameParser {
                 for (EntityDTO entityDTO : dto.entities()) {
 
                     // Call the factory method to figure out if it's a Player, Ball, or Referee
-                    Entity entity = mapEntity(entityDTO);
+                    Entity entity = mapEntity(entityDTO, sanitizer);
 
-                    // Only add it if we successfully mapped it (e.g., ignore unknown types)
+                    // Only add it if we successfully mapped it (unknown types and discarded positions give null)
                     if(entity != null) {
                         frame.addEntity(entity);
                     }
@@ -155,12 +162,24 @@ public class JsonFrameParser {
             }
             frames.add(frame);
         }
+
+        // TA-76: one summary line per parse (and an ALERT when more than 5% of the readings needed fixing).
+        sanitizer.logSummary();
         return frames;
     }
 
     // OOP CONCEPT: Simple Factory Pattern
     // This method takes raw data and decides WHICH specific subclass (Player, Ball, Referee) to instantiate.
-    private Entity mapEntity(EntityDTO dto) {
+    private Entity mapEntity(EntityDTO dto, CoordinateSanitizer sanitizer) {
+
+        // TA-76: validate the position first. An empty Optional means "too far outside the pitch":
+        // we return null, which `convertToDomain` already treats as "do not add this entity".
+        Optional<CoordinateSanitizer.Position> position = sanitizer.sanitize(dto.id(), dto.x(), dto.y());
+        if (position.isEmpty()) {
+            return null;
+        }
+        double x = position.get().x();
+        double y = position.get().y();
 
         // SYNTAX: Safe String Comparison
         // `"player".equalsIgnoreCase(dto.type())` is safer than `dto.type().equalsIgnoreCase("player")`.
@@ -173,13 +192,13 @@ public class JsonFrameParser {
             int team = (dto.teamId() != null) ? dto.teamId() : -1;
 
             // Create and return the Domain Model
-            return new Player(dto.id(), dto.x(), dto.y(), team);
+            return new Player(dto.id(), x, y, team);
 
         } else if ("ball".equalsIgnoreCase(dto.type())) {
-            return new Ball(dto.id(), dto.x(), dto.y());
+            return new Ball(dto.id(), x, y);
 
         } else if ("referee".equalsIgnoreCase(dto.type())) {
-            return new Referee(dto.id(), dto.x(), dto.y());
+            return new Referee(dto.id(), x, y);
         }
 
         // If the JSON had an entity type like "coach", we return null because we don't care about it.

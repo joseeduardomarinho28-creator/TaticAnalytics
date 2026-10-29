@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.io.IOException;
 import java.io.File;
 import java.io.InputStream;
+import java.util.Optional;
 
 // LIBRARY: Jackson (JSON Parser)
 // ObjectMapper is the core class of the Jackson library. It's the engine that 
@@ -18,6 +19,7 @@ import com.taticanalytics.model.FrameData;
 import com.taticanalytics.model.Player;
 import com.taticanalytics.model.Ball;
 import com.taticanalytics.model.Referee;
+import com.taticanalytics.validation.CoordinateSanitizer;
 
 // LIBRARY: SLF4J (Simple Logging Facade for Java)
 // SLF4J is a standard logging API that comes with the Spring Boot starter (backed by Logback).
@@ -133,6 +135,11 @@ public class TrackingDataLoader {
     private List<FrameData> parseFrames(JsonNode rootNode) {
         List<FrameData> frames = new ArrayList<>();
 
+        // TA-76: one sanitizer PER FILE. It applies the coordinate policy to every entity (keep, clamp
+        // or discard) and counts what it did, so a single summary can be logged at the end.
+        // It is created here, and not as a field, because its counters must start from zero on every load.
+        CoordinateSanitizer sanitizer = new CoordinateSanitizer();
+
         // Navigating the tree: We ask the root object for the key named "frames"
         JsonNode framesNode = rootNode.get("frames");
 
@@ -166,6 +173,18 @@ public class TrackingDataLoader {
                         int id = entityNode.get("id").asInt();
                         double x = entityNode.get("x").asDouble();
                         double y = entityNode.get("y").asDouble();
+
+                        // TA-76: validate the position BEFORE creating the entity.
+                        // - slightly outside the pitch (up to 2 m): `x` and `y` are replaced by the clamped values;
+                        // - too far away (or NaN): the Optional is empty, so `continue` skips this entity and
+                        //   moves on to the next one (the frame itself is kept, just without this entity).
+                        // JAVA CONCEPT: `continue` ends the CURRENT iteration of the loop and starts the next one.
+                        Optional<CoordinateSanitizer.Position> position = sanitizer.sanitize(id, x, y);
+                        if (position.isEmpty()) {
+                            continue;
+                        }
+                        x = position.get().x();
+                        y = position.get().y();
                     
                         // JAVA CONCEPT: Switch Statement (String matching)
                         // A cleaner alternative to a long chain of if-else blocks.
@@ -194,6 +213,9 @@ public class TrackingDataLoader {
                 frames.add(currentFrame);
             }
         }
+
+        // TA-76: one summary line per file (and an ALERT when more than 5% of the readings needed fixing).
+        sanitizer.logSummary();
         return frames;
     }
 

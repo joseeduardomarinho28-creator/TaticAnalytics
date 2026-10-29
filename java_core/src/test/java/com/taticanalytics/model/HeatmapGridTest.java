@@ -37,4 +37,40 @@ public class HeatmapGridTest {
         double[][] again = heatmap.getGrid();
         assertEquals(1.0, again[1][1], 0.0001);
     }
+
+    // TA-76: a position exactly on the far edge of the pitch is VALID (the contract says x in [0, 105],
+    // y in [0, 68]). Before, 105.0 / 7.0 = 15 was an index past the last column (14) and the time
+    // was silently thrown away.
+    @Test
+    public void shouldPutAPositionOnTheFarEdgeOfThePitchInTheLastCell() {
+
+        // ARRANGE + ACT: the default heatmap has 10 rows x 15 columns, so the last cell is [9][14].
+        HeatmapGrid heatmap = new HeatmapGrid();
+        heatmap.addTime(105.0, 68.0, 1.0);
+
+        // ASSERT
+        assertEquals(1.0, heatmap.getGrid()[9][14], 0.0001);
+    }
+
+    // TA-76: positions outside the pitch, or not a number, must not be counted in any cell.
+    // GOTCHA: `(int) (-0.5 / 7.0)` is 0, because casting to `int` truncates toward zero. Before the fix,
+    // a position slightly to the left of the pitch was wrongly counted in column 0.
+    @Test
+    public void shouldIgnorePositionsOutsideThePitchOrNotANumber() {
+
+        HeatmapGrid heatmap = new HeatmapGrid();
+        heatmap.addTime(-0.5, 10.0, 1.0);
+        heatmap.addTime(105.1, 10.0, 1.0);
+        heatmap.addTime(10.0, 68.1, 1.0);
+        heatmap.addTime(Double.NaN, 10.0, 1.0);
+
+        // ASSERT: the sum of ALL cells is still zero, so none of the four calls was counted.
+        double sum = 0.0;
+        for (double[] row : heatmap.getGrid()) {
+            for (double cell : row) {
+                sum += cell;
+            }
+        }
+        assertEquals(0.0, sum, 0.0001);
+    }
 }

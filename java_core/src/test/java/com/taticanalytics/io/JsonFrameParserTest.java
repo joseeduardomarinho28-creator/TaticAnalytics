@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
+import com.taticanalytics.model.Entity;
 import com.taticanalytics.model.FrameData;
 
 // PURPOSE:
@@ -127,5 +128,39 @@ public class JsonFrameParserTest {
         );
 
         assertTrue(ex.getMessage().contains("does_not_exist.json"));
+    }
+
+    // TA-76: same coordinate policy as in `TrackingDataLoader`, now through `JsonFrameParser`
+    // (both loaders share the rule, so they must behave the same way).
+    // - the referee is 2.01 m outside the pitch (just past the margin): DISCARDED;
+    // - the ball is exactly 2 m outside (x = 107.0): CLAMPED to the pitch edge (105.0).
+    @Test
+    public void shouldClampNearbyPositionsAndDiscardFarAwayOnes() throws Exception {
+
+        // ARRANGE
+        String jsonContent = """
+            {
+              "match_info": { "video_name": "test.mp4", "frame_rate": 30 },
+              "frames": [
+                { "frame_id": 1, "timestamp": 0.04, "entities": [
+                  { "type": "ball", "id": 0, "x": 107.0, "y": 34.0 },
+                  { "type": "referee", "id": 1000, "x": 50.0, "y": 70.01 },
+                  { "type": "player", "id": 8, "x": 50.0, "y": 30.0, "team_id": 2 }
+                ] }
+              ]
+            }
+            """;
+        JsonFrameParser parser = new JsonFrameParser();
+
+        // ACT
+        List<FrameData> frames = parser.parseJsonString(jsonContent);
+
+        // ASSERT: the referee is gone, the ball was clamped and the player is untouched.
+        List<Entity> entities = frames.get(0).getEntities();
+        assertEquals(2, entities.size());
+        assertEquals(0, entities.get(0).getId());
+        assertEquals(105.0, entities.get(0).getX(), 0.0001);
+        assertEquals(34.0, entities.get(0).getY(), 0.0001);
+        assertEquals(8, entities.get(1).getId());
     }
 }
