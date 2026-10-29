@@ -204,4 +204,4 @@ public class TrackingDataLoader {
     public List<FrameData> loadSampleData() {
         return loadFromClasspath(SAMPLE_RESOURCE);
     }
-}
+}
