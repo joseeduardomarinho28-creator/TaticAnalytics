@@ -1,0 +1,3 @@
+# Let Git detect text files and store them with LF line endings in the repository.
+# Windows checkouts may still show CRLF in the working tree; what gets committed is always LF.
+* text=auto

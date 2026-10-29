@@ -129,4 +129,4 @@ public class HeatmapGrid {
     public int getCols() {
         return cols;
     }
-}
+}
