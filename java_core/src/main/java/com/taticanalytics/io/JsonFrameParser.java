@@ -19,6 +19,7 @@ import com.taticanalytics.model.Ball;
 import com.taticanalytics.model.Player;
 import com.taticanalytics.model.Referee;
 import com.taticanalytics.validation.CoordinateSanitizer;
+import com.taticanalytics.validation.FrameIntegrityChecker;
 
 // DTO imports (The "Dumb" objects that just carry data)
 import com.taticanalytics.io.dto.EntityDTO;
@@ -129,13 +130,16 @@ public class JsonFrameParser {
     // OOP CONCEPT: Private Helper Method
     // This method is hidden from the outside world. Other classes only care that they give this
     // parser a String and get back a List of Domain models.
-    private List<FrameData> convertToDomain(List<FrameDataDTO> dtos) {
+    private List<FrameData> convertToDomain(List<FrameDataDTO> dtos) throws IOException {
         List<FrameData> frames = new ArrayList<>();
 
         // TA-76: one sanitizer PER CALL. It applies the coordinate policy (keep, clamp or discard) to every
         // entity and counts what it did. It is a local variable, and not a field, because this class is a
         // Spring singleton and the counters must start from zero on every parse.
         CoordinateSanitizer sanitizer = new CoordinateSanitizer();
+
+        // TA-76: same idea for the structure of each frame (valid team_id, at most one ball, unique ids).
+        FrameIntegrityChecker checker = new FrameIntegrityChecker();
 
         // Loop through each frame DTO
         for (FrameDataDTO dto : dtos) {
@@ -145,17 +149,25 @@ public class JsonFrameParser {
             // This is because FrameDataDTO is a Java `record`.
             FrameData frame = new FrameData(dto.frameId(), dto.timestamp());
 
+            // TA-76: the "ids seen" and "ball seen" memory of the checker is per frame.
+            checker.startFrame();
+
             // Defensive programming: Make sure the entities list actually exists in the JSON
             if (dto.entities() != null) {
 
+                // Position of the entity inside the frame (1, 2, 3...), only used to build a clear error message.
+                int entityNumber = 0;
+
                 // Loop through each entity DTO inside this frame
                 for (EntityDTO entityDTO : dto.entities()) {
+                    entityNumber++;
 
                     // Call the factory method to figure out if it's a Player, Ball, or Referee
-                    Entity entity = mapEntity(entityDTO, sanitizer);
+                    Entity entity = mapEntity(entityDTO, sanitizer, dto.frameId(), entityNumber);
 
                     // Only add it if we successfully mapped it (unknown types and discarded positions give null)
-                    if(entity != null) {
+                    // AND the structure checks accept it (valid team_id, at most one ball, unique id).
+                    if (entity != null && checker.accept(dto.frameId(), entity)) {
                         frame.addEntity(entity);
                     }
                 }
@@ -165,12 +177,35 @@ public class JsonFrameParser {
 
         // TA-76: one summary line per parse (and an ALERT when more than 5% of the readings needed fixing).
         sanitizer.logSummary();
+        checker.logSummary();
         return frames;
+    }
+
+    // PURPOSE (TA-76):
+    // Fails with a clear message when a REQUIRED field is `null`, meaning it was missing from the JSON.
+    // It throws `IOException`, like the "missing frames" check in `parseJsonString`, so callers keep dealing
+    // with the same exception type.
+    private void requireField(Object value, String field, int frameId, int entityNumber) throws IOException {
+        if (value == null) {
+            throw new IOException("Entity " + entityNumber + " of frame " + frameId
+                + " is missing the required field \"" + field + "\"");
+        }
     }
 
     // OOP CONCEPT: Simple Factory Pattern
     // This method takes raw data and decides WHICH specific subclass (Player, Ball, Referee) to instantiate.
-    private Entity mapEntity(EntityDTO dto, CoordinateSanitizer sanitizer) {
+    private Entity mapEntity(EntityDTO dto, CoordinateSanitizer sanitizer, int frameId, int entityNumber) throws IOException {
+
+        // TA-76: REQUIRED fields. In `EntityDTO` these are wrapper types, so a field missing from the JSON
+        // arrives here as `null` (a primitive would have silently become 0). We reject the file with a clear
+        // message instead of guessing a value.
+        requireField(dto.type(), "type", frameId, entityNumber);
+        requireField(dto.id(), "id", frameId, entityNumber);
+        requireField(dto.x(), "x", frameId, entityNumber);
+        requireField(dto.y(), "y", frameId, entityNumber);
+        if ("player".equalsIgnoreCase(dto.type())) {
+            requireField(dto.teamId(), "team_id", frameId, entityNumber);
+        }
 
         // TA-76: validate the position first. An empty Optional means "too far outside the pitch":
         // we return null, which `convertToDomain` already treats as "do not add this entity".
@@ -187,9 +222,10 @@ public class JsonFrameParser {
         if ("player".equalsIgnoreCase(dto.type())) {
 
             // SYNTAX: Ternary Operator (`condition ? if_true : if_false`)
-            // Remember that in our EntityDTO, `teamId` is an `Integer` (wrapper class), so it can be null.
-            // If the JSON didn't have a team_id, we default it to -1 (or any invalid team ID).
-            int team = (dto.teamId() != null) ? dto.teamId() : -1;
+            // TA-76: `teamId` is an `Integer` (wrapper class), but for a player it was already checked as
+            // required above, so it is safe to unbox it into an `int` here. (Before, a missing team_id became -1.)
+            // Whether the value is a VALID team (1 or 2) is checked later, by the FrameIntegrityChecker.
+            int team = dto.teamId();
 
             // Create and return the Domain Model
             return new Player(dto.id(), x, y, team);

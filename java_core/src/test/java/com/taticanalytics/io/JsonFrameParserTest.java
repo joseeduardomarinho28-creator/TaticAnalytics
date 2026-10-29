@@ -163,4 +163,76 @@ public class JsonFrameParserTest {
         assertEquals(34.0, entities.get(0).getY(), 0.0001);
         assertEquals(8, entities.get(1).getId());
     }
+
+    // TA-76: a REQUIRED field that is missing must be rejected with a clear message. Before, `x` was a
+    // primitive `double` in `EntityDTO`, so a missing "x" silently became 0.0 and the player appeared in the corner.
+    @Test
+    public void shouldRejectAnEntityMissingARequiredField() {
+
+        String jsonContent = """
+            {
+              "frames": [
+                { "frame_id": 3, "timestamp": 0.12, "entities": [
+                  { "type": "player", "id": 7, "y": 30.0, "team_id": 1 }
+                ] }
+              ]
+            }
+            """;
+        JsonFrameParser parser = new JsonFrameParser();
+
+        // `assertThrows` also returns the exception, so we can check the message.
+        IOException exception = assertThrows(IOException.class, () -> parser.parseJsonString(jsonContent));
+
+        assertTrue(exception.getMessage().contains("\"x\""));
+        assertTrue(exception.getMessage().contains("frame 3"));
+    }
+
+    @Test
+    public void shouldRejectAPlayerWithoutTeamId() {
+
+        String jsonContent = """
+            {
+              "frames": [
+                { "frame_id": 1, "timestamp": 0.04, "entities": [
+                  { "type": "player", "id": 7, "x": 10.0, "y": 30.0 }
+                ] }
+              ]
+            }
+            """;
+        JsonFrameParser parser = new JsonFrameParser();
+
+        IOException exception = assertThrows(IOException.class, () -> parser.parseJsonString(jsonContent));
+
+        assertTrue(exception.getMessage().contains("\"team_id\""));
+    }
+
+    // TA-76: pixel-scale coordinate (the original problem of the sample file) and the structure rules, through
+    // the parser: it must behave like `TrackingDataLoader`.
+    // Frame 1: player 1 is valid; player 2 is at pixel (960, 540): discarded; player 3 has team_id 3: discarded;
+    // ball 0 is valid and ball 5 is a SECOND ball in the frame: discarded.
+    @Test
+    public void shouldDiscardPixelCoordinatesInvalidTeamAndExtraBall() throws Exception {
+
+        String jsonContent = """
+            {
+              "frames": [
+                { "frame_id": 1, "timestamp": 0.04, "entities": [
+                  { "type": "player", "id": 1, "x": 10.0, "y": 10.0, "team_id": 1 },
+                  { "type": "player", "id": 2, "x": 960.0, "y": 540.0, "team_id": 2 },
+                  { "type": "player", "id": 3, "x": 20.0, "y": 20.0, "team_id": 3 },
+                  { "type": "ball", "id": 0, "x": 15.0, "y": 15.0 },
+                  { "type": "ball", "id": 5, "x": 60.0, "y": 30.0 }
+                ] }
+              ]
+            }
+            """;
+        JsonFrameParser parser = new JsonFrameParser();
+
+        List<FrameData> frames = parser.parseJsonString(jsonContent);
+
+        List<Entity> entities = frames.get(0).getEntities();
+        assertEquals(2, entities.size());
+        assertEquals(1, entities.get(0).getId());
+        assertEquals(0, entities.get(1).getId());
+    }
 }
