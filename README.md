@@ -61,6 +61,7 @@ Its internal design separates domain modeling, data loading/parsing, and analyti
 - Calculation of **ball possession per team**, with protection against retroactive attribution and handling of occlusion/contested ball.
 - Calculation of **ball possession per player**, using the same possession state machine.
 - **Spatial heatmap generation** per player (`HeatmapGrid`), with configurable grid resolution and field dimensions.
+- **Strategy pattern in the analytics (TA-77)**: each algorithm (distance/speed, possession, heatmap) lives in its own class behind the `MetricCalculationStrategy<T>` interface, and `AnalyticsService` only delegates to them. See [Design pattern: Strategy](#design-pattern-strategy-ta-77).
 - A **Spring Boot REST API** (`AnalyticsController`) exposing player stats, possession (per player/team), and heatmap endpoints.
 - **Global exception handling** (`GlobalExceptionHandler`) returning standardized JSON error responses instead of raw stack traces.
 - **CORS configuration** (`WebConfig`) allowing cross-origin requests to the API.
@@ -87,7 +88,7 @@ See [Roadmap](#roadmap).
                 Domain Model (FrameData, Entity, Player, Referee, Ball)
                                  │
                                  ▼
-                  AnalyticsService (business rules)
+                  AnalyticsService (facade, delegates to strategies)
                                  │
                  ┌───────────────┼───────────────┐
                  ▼               ▼               ▼
@@ -98,7 +99,8 @@ See [Roadmap](#roadmap).
 ```
 
 - **`model`** — domain entities representing the state of the field at a given moment, plus output objects (`PlayerStats`, `HeatmapGrid`).
-- **`service`** — business rules (kinematic calculations, possession state machine, heatmap generation) and the console-oriented data loader.
+- **`service`** — `AnalyticsService`, the facade that exposes the analytics, and the console-oriented data loader.
+- **`service.strategy`** — the analytics algorithms themselves (kinematic calculations, possession state machine, heatmap generation), one class per algorithm behind a common interface (TA-77).
 - **`io`** — the DTO-based JSON parser used by the REST API (`JsonFrameParser`, `io.dto.*`) and the export service (`ExportService`).
 - **`controller`** — the REST API surface (`AnalyticsController`).
 - **`config`** — Spring web configuration (`WebConfig`, CORS).
@@ -107,6 +109,26 @@ See [Roadmap](#roadmap).
 - **root (`Main`, `Application`)** — the two entry points: console app and Spring Boot web app.
 
 `AnalyticsService` operates entirely on domain objects and has no dependency on how the tracking data was loaded — this is what allows two different loaders (`TrackingDataLoader` and `JsonFrameParser`) to coexist today.
+
+### Design pattern: Strategy (TA-77)
+
+Before TA-77, `AnalyticsService` held every algorithm (about 250 lines), including two almost identical copies of the possession logic (one keyed by player id, one keyed by team id). Each algorithm now lives in its own class in `service.strategy`, all implementing the same interface, and `AnalyticsService` only packs the inputs into a `MetricParams` and delegates.
+
+```text
+  AnalyticsService ───uses──▶ MetricCalculationStrategy<T>
+  (facade, same public API)    T calculate(List<FrameData> frames, MetricParams params)
+                                        ▲                 ▲                  ▲
+                                        │                 │                  │
+                            DistanceSpeedStrategy  PossessionStrategy   HeatmapStrategy
+                            T = PlayerStats        T = Map<Integer,     T = HeatmapGrid
+                                                       Double>
+                                                   perPlayer() / perTeam()
+```
+
+- **One interface, three result types:** the generic `<T>` lets the same contract return a `PlayerStats`, a `Map<Integer, Double>` or a `HeatmapGrid`.
+- **`MetricParams`** (a Parameter Object, implemented as a `record`) carries every possible input (entity id, radius, grid size, field size). Static factories (`forPlayer`, `forPossession`, `forHeatmap`) fill the fields a metric does not use with neutral defaults.
+- **No duplication in the possession logic:** `PossessionStrategy` receives a `Function<Player, Integer>` that extracts the key under which the time is credited. `perPlayer()` passes `Player::getId` and `perTeam()` passes `Player::getTeamId`; the algorithm is the same.
+- **Same public API:** the methods of `AnalyticsService` keep their names and parameters, and `new AnalyticsService()` still works (it builds the default strategies). A second constructor accepts other strategies, so an algorithm can be replaced without changing `AnalyticsService`.
 
 ---
 
@@ -185,13 +207,29 @@ classDiagram
 
 **Package:** `com.taticanalytics.service`
 
-**Responsibility:** the main analytical engine of the system. Calculates kinematic variables (distance, speed), manages the state machine responsible for ball-possession attribution, and generates spatial heatmaps. Stateless (safe as a Spring singleton).
+**Responsibility:** the entry point of the analytical engine. Since TA-77 it no longer contains the algorithms: it packs the inputs into a `MetricParams` and delegates to the strategies in `service.strategy` (distance/speed, ball-possession attribution, spatial heatmaps). Stateless (safe as a Spring singleton).
 
 **Main methods:** `calculatePlayerStats(...)`, `calculatePossessionTimePerTeam(...)`, `calculatePossessionTimePerPlayer(...)`, `generatePlayerHeatmap(...)`.
 
-**Relationships:** consumes `List<FrameData>` produced by either `TrackingDataLoader` or `JsonFrameParser`; iterates over `Entity` and distinguishes `Player`, `Referee`, and `Ball`; consumed by `Main` and `AnalyticsController`.
+**Relationships:** consumes `List<FrameData>` produced by either `TrackingDataLoader` or `JsonFrameParser`; delegates to `DistanceSpeedStrategy`, `PossessionStrategy` (twice: per player and per team) and `HeatmapStrategy`; consumed by `Main` and `AnalyticsController`. It has a no-arg constructor (default strategies) and a constructor that receives the strategies.
 
 **Role in the architecture:** main candidate to become the public facade should the project evolve into a library.
+
+### `MetricCalculationStrategy<T>` / `MetricParams` (TA-77)
+
+**Package:** `com.taticanalytics.service.strategy`
+
+**Responsibility:** `MetricCalculationStrategy<T>` is the common contract of the analytics algorithms: `T calculate(List<FrameData> frames, MetricParams params)`. `MetricParams` is the `record` that carries every possible input (entity id, possession radius, grid rows/cols, field width/height), with the factories `forPlayer`, `forPossession` and `forHeatmap`.
+
+**Relationships:** implemented by the three strategies below; used by `AnalyticsService`; `MetricParams` takes its defaults from `MatchConstants`.
+
+### `DistanceSpeedStrategy` / `PossessionStrategy` / `HeatmapStrategy` (TA-77)
+
+**Package:** `com.taticanalytics.service.strategy`
+
+**Responsibility:** the algorithms that used to live inside `AnalyticsService`. `DistanceSpeedStrategy` returns a `PlayerStats` (total distance and maximum speed). `PossessionStrategy` returns the possession time per key; `PossessionStrategy.perPlayer()` and `PossessionStrategy.perTeam()` differ only in the function that extracts the key. `HeatmapStrategy` returns a `HeatmapGrid`.
+
+**Relationships:** consume `List<FrameData>` and distinguish `Player` and `Ball`; chosen and called by `AnalyticsService`.
 
 ### `TrackingDataLoader`
 
@@ -382,6 +420,8 @@ classDiagram
 
 Overloaded variants of `calculatePossessionTimePerTeam`, `calculatePossessionTimePerPlayer`, and `generatePlayerHeatmap` exist that fall back to `MatchConstants` defaults.
 
+`new AnalyticsService()` uses the default strategies. A second constructor, `AnalyticsService(distanceSpeedStrategy, playerPossessionStrategy, teamPossessionStrategy, heatmapStrategy)`, accepts other implementations of `MetricCalculationStrategy` (TA-77).
+
 ### `PlayerStats`
 
 | Method | Returns | Description |
@@ -567,7 +607,7 @@ This starts the embedded Tomcat server (default port `8080`) and exposes the end
 mvn test
 ```
 
-- `AnalyticsServiceTest` — covers the ball-possession state machine (per team and per player), including protection against retroactive attribution, as well as the kinematic calculations (distance/speed).
+- `AnalyticsServiceTest` — covers the ball-possession state machine (per team and per player), including protection against retroactive attribution, as well as the kinematic calculations (distance/speed). Since TA-77 these tests go through `AnalyticsService` and therefore also exercise the strategies, unchanged.
 - `AnalyticsServiceHeatmapTest` — covers heatmap cell accumulation, frame-gap handling, non-existent players, and default-dimension fallbacks.
 - `AnalyticsControllerTest` — covers the REST layer with `@WebMvcTest` and `MockMvc` (service and parser replaced by `@MockBean`): JSON responses for stats, possession (per player/team, with and without `radius`) and heatmap (no parameters, partial parameters with `MatchConstants` fallbacks, all parameters), plus the `400` (invalid `id`) and `500` (sample file cannot be loaded) error responses.
 - `JsonFrameParserTest` — covers DTO-based JSON parsing into the domain model and, since TA-76, the same validation rules as `TrackingDataLoader`.
@@ -597,7 +637,7 @@ The maximum speed is updated whenever a higher instantaneous speed is found alon
 
 ### Ball possession
 
-For every frame, the system identifies which player is closest to the ball. If that minimum distance is within the given `radiusMeters`, that player (and their team) is considered the possessor of the ball at that instant.
+Implemented once, in `PossessionStrategy`; the per-player and per-team results differ only in the key function (`Player::getId` or `Player::getTeamId`). For every frame, the system identifies which player is closest to the ball. If that minimum distance is within the given `radiusMeters`, that player (and their team) is considered the possessor of the ball at that instant.
 
 ### Temporal state (avoiding retroactive attribution)
 
@@ -609,7 +649,7 @@ The pitch is divided into a `rows × cols` grid. For each pair of consecutive fr
 
 ### Entity matching (TA-107)
 
-`calculatePlayerStats` and `generatePlayerHeatmap` find the requested entity with `entity instanceof Player player && player.getId() == entityId`, that is, by **type and id**, never by id alone. Ids are only unique among entities of the same type: a tracker can give a player the same id used by a referee (both in the same frames), and matching by id alone would make the algorithm jump between them and accumulate fake distance (impossible speeds) with no error. The ball and the referee are therefore never returned as if they were a player.
+`DistanceSpeedStrategy` and `HeatmapStrategy` find the requested entity with `entity instanceof Player player && player.getId() == entityId`, that is, by **type and id**, never by id alone. Ids are only unique among entities of the same type: a tracker can give a player the same id used by a referee (both in the same frames), and matching by id alone would make the algorithm jump between them and accumulate fake distance (impossible speeds) with no error. The ball and the referee are therefore never returned as if they were a player.
 
 ### Frame continuity rule
 
@@ -671,7 +711,13 @@ taticanalytics-core/
     │   │           │   └── Referee.java
     │   │           ├── service/
     │   │           │   ├── AnalyticsService.java
-    │   │           │   └── TrackingDataLoader.java
+    │   │           │   ├── TrackingDataLoader.java
+    │   │           │   └── strategy/
+    │   │           │       ├── DistanceSpeedStrategy.java
+    │   │           │       ├── HeatmapStrategy.java
+    │   │           │       ├── MetricCalculationStrategy.java
+    │   │           │       ├── MetricParams.java
+    │   │           │       └── PossessionStrategy.java
     │   │           ├── util/
     │   │           │   └── MatchConstants.java
     │   │           └── validation/
@@ -740,7 +786,7 @@ taticanalytics-core/
 Suggested path for anyone contributing to the project:
 
 1. **Start with the models** (`com.taticanalytics.model`) — understand the `Entity` inheritance, the composition of `FrameData`, and the `HeatmapGrid` structure.
-2. **Read `AnalyticsService`** — the heart of the business logic. Pay special attention to the possession state machine, how it avoids retroactive attribution, and the frame-continuity rule shared by distance/possession/heatmap calculations.
+2. **Read `AnalyticsService` and the `service.strategy` package** — `AnalyticsService` is the facade and the strategies hold the business logic. Pay special attention to the possession state machine in `PossessionStrategy`, how it avoids retroactive attribution, and the frame-continuity rule shared by distance/possession/heatmap calculations.
 3. **Understand data loading** in `TrackingDataLoader` (console path) and `JsonFrameParser` (REST API path) — see how the tracking file becomes a `List<FrameData>`, and note that these two loaders currently duplicate logic (see [Known Issues](#known-issues--to-review--resolve)).
 4. **Read `AnalyticsController`** to see how the same engine is exposed over HTTP, and `GlobalExceptionHandler` to see how errors are standardized.
 5. **Run `Main`** to see the console end-to-end flow, and `mvn spring-boot:run` to see the REST API end-to-end flow.
@@ -765,6 +811,7 @@ mvn test
 - [x] Global exception handling with standardized JSON error responses.
 - [x] CORS configuration for cross-origin API access.
 - [x] Export of the stats of all players to CSV from the console app (`ExportService` as a Spring bean).
+- [x] Strategy pattern in the analytics algorithms, removing the duplicated possession logic (TA-77).
 
 ### 📋 Planned
 
