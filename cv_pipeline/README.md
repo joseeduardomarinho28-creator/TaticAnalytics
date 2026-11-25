@@ -2,9 +2,125 @@
 
 Pipeline Python responsável por transformar vídeo de futebol em dados de
 tracking consumidos pelo núcleo Java. Atualmente, o projeto valida vídeos e
-seus metadados e oferece a calibração do campo de pixels para metros. Detecção,
-tracking, classificação de times e exportação serão acrescentados nas próximas
-issues.
+seus metadados, oferece calibração do campo de pixels para metros, detecção
+de objetos em um quadro, exportação e validação do contrato JSON.
+Tracking e classificação de times serão acrescentados nas próximas issues.
+
+## Primeira detecção em um quadro (TA-53)
+
+Com a `.venv` ativa, execute a partir de `cv_pipeline`:
+
+```bash
+python src/detect_frame.py --video "/caminho/para/clipe.mp4" \
+  --seconds 0 --model yolo26n.pt --imgsz 1280 --conf 0.25 \
+  --device cpu --output output/ta53-1280
+```
+
+O modelo pré-treinado é baixado na primeira execução se ainda não estiver local.
+Também é possível passar um caminho para pesos existentes em `--model`.
+O script imprime classe, confiança e cantos da caixa de cada detecção e salva
+`original.jpg`, `annotated.jpg` e `detections.json`. O JSON registra os parâmetros
+da execução e as dimensões do quadro para facilitar a reprodução. Saídas e pesos
+continuam fora do Git. Uma nova execução na mesma pasta substitui suas saídas;
+use pastas diferentes para comparar parâmetros.
+
+`xyxy_px` significa `[esquerda, topo, direita, base]`, em pixels do quadro de
+entrada, não do tensor redimensionado pelo modelo e não em metros. Para pessoas,
+`foot_point_px` usa `[(esquerda + direita) / 2, base]`: a posição aproximada dos
+pés. Não usamos o centro da caixa para calibrar a posição do jogador.
+Outras classes recebem `foot_point_px: null`.
+
+### Experimento de retomada — 24/11/2026
+
+Nova gravação de tela, distinta do clipe validado na TA-51. O original tem
+2880×1800 e duração de aproximadamente 32,84 segundos. O trecho preparado remove
+os primeiros 8 segundos com controles e recorta a região `2880:1620:0:90`,
+normalizada para 1920×1080 e 30 fps. O arquivo local
+`TA-53-clipe-24s-1080p.mp4` tem efetivamente 719 quadros e 23,967 segundos;
+não substitui a validação anterior de 30 segundos da TA-51.
+
+Resultado reproduzido no primeiro quadro desse clipe, com Ultralytics 8.4.163,
+YOLO26n, CPU, `imgsz=1280` e `conf=0.25`:
+
+* **Quantas pessoas?** 32 detecções da classe `person`. Incluem pessoas nas
+  laterais e fora do campo; não equivalem a 32 jogadores nem a uma contagem real
+  conferida manualmente. A inspeção visual também mostra jogadores não detectados.
+* **A bola foi detectada?** Não; nenhuma detecção de `sports ball` nesse quadro.
+* **Qual a confiança?** Para pessoas: mínimo 0,253, mediana 0,398 e máximo 0,637.
+  Não há confiança de bola a reportar. A pontuação não comprova uma detecção correta.
+* **Cantos ou centro?** Os valores `xyxy` são os cantos da caixa; a posição dos
+  pés é derivada separadamente, conforme a regra acima.
+
+O teste exploratório anterior detectou 27 pessoas em uma imagem intermediária;
+não é a mesma entrada desta execução reproduzível. A imagem marcada foi conferida:
+há omissões no campo e detecções fora dele. Isto demonstra a primeira inferência,
+sem comprovar qualidade suficiente para tracking ou posse de bola. Comparar modelos
+fica na TA-54; filtragem fora do campo, na TA-108.
+
+Referência da API: [Ultralytics Predict](https://docs.ultralytics.com/modes/predict/).
+
+### Melhoria após revisão do Bruno — pessoas no campo e bola
+
+A primeira execução acima é uma **linha de base insuficiente** para análise de
+partidas. O script agora filtra as classes COCO `person` e `sports ball`, elimina
+caixas sobrepostas por classe (IoU > 0,4) e aceita uma região convexa do campo.
+Pessoas são filtradas pelo ponto dos pés; bolas, pelo centro da caixa.
+Detecções fora da região ficam no JSON com o motivo da rejeição.
+Não há corte artificial nas 23 maiores confianças: uma contagem acima de 23 gera
+aviso para revisão. Menos de 23 não comprova cobertura, pois jogadores podem
+estar fora da câmera ou ser omitidos pelo detector. A classe `person` ainda não
+distingue jogador de árbitro.
+
+`configs/ta53-frame0-field.json` contém a região aproximada marcada manualmente
+para o primeiro quadro do **novo clipe preparado**. O arquivo inclui tamanho,
+instante e hash SHA-256 dos pixels decodificados. O script rejeita sua aplicação
+em outro quadro. Não é calibração em metros nem segmentação automática; com a
+câmera em movimento, a região precisa acompanhar o quadro (TA-109/TA-108).
+
+Foi testado um detector dedicado de bola:
+[martinjolif/yolo-football-ball-detection](https://huggingface.co/martinjolif/yolo-football-ball-detection),
+YOLO11n ajustado para bola de futebol, licença AGPL-3.0 conforme o model card.
+Os resultados de avaliação publicados pelo autor não medem este nosso vídeo.
+Download dos pesos, fora do repositório:
+
+```bash
+curl --fail --location \
+  https://huggingface.co/martinjolif/yolo-football-ball-detection/resolve/main/yolo-football-ball-detection.pt \
+  --output /caminho/para/modelos/yolo-football-ball-detection.pt
+```
+
+SHA-256 dos pesos testados:
+`fb37942448e7de08745e8aab148d0794f680a738ddd55e5f17abe9ab2d6313fb`.
+
+Execução melhorada, a partir de `cv_pipeline` (ajuste os caminhos locais):
+
+```bash
+python src/detect_frame.py --video "/caminho/TA-53-clipe-24s-1080p.mp4" \
+  --seconds 0 --model /caminho/para/modelos/yolo26s.pt --imgsz 1920 \
+  --conf 0.25 --field-region configs/ta53-frame0-field.json \
+  --ball-model /caminho/para/modelos/yolo-football-ball-detection.pt \
+  --ball-imgsz 1280 --ball-conf 0.25 --device cpu --output output/ta53-improved
+```
+
+No primeiro quadro: **20 pessoas dentro da região e uma bola**, com confiança
+da bola de 0,255. O resultado foi inspecionado visualmente; um recorte de 0 a
+0,6 s mostra o pequeno objeto junto aos pés do jogador se deslocando, sustentando
+a identificação da bola. A redução de pessoas vem da filtragem espacial e da
+remoção de uma caixa duplicada sobre o goleiro, sem limitar a contagem.
+
+**Limitação ainda aberta:** em 10 instantes amostrados (0; 0,2; 0,4; 0,6; 1;
+2; 4; 8; 12; 20 s), o detector de bola sem recortes gerou candidatos em apenas
+3 instantes: 0, 12 e 20 s. Isto não é recall medido nem validação manual dos
+10 quadros. A detecção contínua ainda não está pronta para medir posse de bola.
+
+O modo opcional `--ball-tile-size 400` percorre recortes com 20% de sobreposição
+e converte as coordenadas de volta ao quadro original, sem nova dependência.
+Com o detector dedicado, encontrou a bola real com confiança 0,711 no quadro
+inicial, mas também quatro falsos candidatos dentro do campo (inclusive pés).
+Por isso não é o padrão recomendado, e múltiplas bolas geram aviso, sem escolher
+automaticamente uma delas. A investigação segue na TA-54 e TA-56.
+Os IDs das classes de bola são resolvidos pelo nome no modelo: o detector dedicado
+usa `ball=0`, enquanto COCO usa `sports ball=32`.
 
 ## Requisitos
 
