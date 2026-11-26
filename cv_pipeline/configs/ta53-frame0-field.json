@@ -1,0 +1,27 @@
+{
+  "frame_size_px": [
+    1920,
+    1080
+  ],
+  "requested_seconds": 0,
+  "polygon_px": [
+    [
+      0,
+      277
+    ],
+    [
+      1919,
+      244
+    ],
+    [
+      1919,
+      957
+    ],
+    [
+      0,
+      994
+    ]
+  ],
+  "note": "Manual visible-pitch region, first frame only; approximate touchlines, requires visual review.",
+  "frame_sha256": "815bc8028a1d2f8c42ca929637fe6efd770a2434827e14df7625fddc8543a022"
+}
